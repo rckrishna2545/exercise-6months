@@ -281,838 +281,1069 @@ const DT=["A","B","C","D"];
 // All transforms use SVG transform-origin for correct pivot points
 
 function animSVG(id){
-const svgs={
+// ─────────────────────────────────────────────────────────────────────────
+// HUMAN BODY ANIMATION ENGINE
+// Each SVG uses filled shapes for a complete human figure:
+//   Head = circle, Neck = short rect, Torso = rounded rect with shoulders
+//   Limbs = rounded rect segments (upper/lower arm, upper/lower leg)
+//   Hands/Feet = small ovals
+//   Dumbbells = styled with weight plates
+// CSS keyframes animate individual body segments via transform-origin
+// Colors: skin=#f4c08a, muscle-highlight=#e8a06a, clothes=#2c3e50/#e8534a
+// ─────────────────────────────────────────────────────────────────────────
 
-// ══════════════════════════════════════════════════════════
+// Shared style block injected into every SVG
+const CSS = `
+  .sk{fill:#f4c08a;stroke:#c87840;stroke-width:1;}
+  .sh{fill:#e8a06a;}
+  .shirt{fill:#2c3e50;}
+  .shorts{fill:#c8382d;}
+  .shoe{fill:#1a1a2e;stroke:#2c3e50;stroke-width:1;}
+  .db-bar{fill:#888;stroke:#555;stroke-width:1;}
+  .db-plate{fill:#378add;stroke:#185fa5;stroke-width:1;}
+  .db-plate2{fill:#e24b4a;stroke:#a32d2d;stroke-width:1;}
+  .lbl{font:11px -apple-system,sans-serif;fill:#6b6860;}
+  .muscle{fill:#d4905a;opacity:0.5;}
+`;
+
+// ─── HELPER: draw a dumbbell horizontally centered at (cx,cy) ───────────
+// returns SVG string: bar + two plate sets
+function db(cx,cy,w=38,ph=14){
+  const hw=w/2, bh=5;
+  return `<rect x="${cx-hw}" y="${cy-bh/2}" width="${w}" height="${bh}" rx="2" class="db-bar"/>
+  <rect x="${cx-hw-7}" y="${cy-ph/2}" width="7" height="${ph}" rx="2" class="db-plate"/>
+  <rect x="${cx-hw-13}" y="${cy-ph/2+2}" width="6" height="${ph-4}" rx="2" class="db-plate2"/>
+  <rect x="${cx+hw}" y="${cy-ph/2}" width="7" height="${ph}" rx="2" class="db-plate"/>
+  <rect x="${cx+hw+7}" y="${cy-ph/2+2}" width="6" height="${ph-4}" rx="2" class="db-plate2"/>`;
+}
+
+// vertical dumbbell (hammer curl)
+function dbV(cx,cy,h=36,pw=14){
+  const hh=h/2, bw=5;
+  return `<rect x="${cx-bw/2}" y="${cy-hh}" width="${bw}" height="${h}" rx="2" class="db-bar"/>
+  <rect x="${cx-pw/2}" y="${cy-hh-7}" width="${pw}" height="7" rx="2" class="db-plate"/>
+  <rect x="${cx-pw/2+2}" y="${cy-hh-13}" width="${pw-4}" height="6" rx="2" class="db-plate2"/>
+  <rect x="${cx-pw/2}" y="${cy+hh}" width="${pw}" height="7" rx="2" class="db-plate"/>
+  <rect x="${cx-pw/2+2}" y="${cy+hh+7}" width="${pw-4}" height="6" rx="2" class="db-plate2"/>`;
+}
+
+const svgs = {
+
+// ══════════════════════════════════════════════════════════════════════════
 // PUSH DAY
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
-"chest-press": `<svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs>
-  <style>
-    .cp-body{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-    .cp-db{fill:#378add;stroke:#185fa5;stroke-width:1;}
-    /* lying figure: head at right, feet at left */
-    /* arms animate: press up from chest (y~90) to extended (y~55) */
-    .cp-arm-l{transform-origin:148px 95px; animation:cp-press 2.2s ease-in-out infinite alternate;}
-    .cp-arm-r{transform-origin:152px 95px; animation:cp-press 2.2s ease-in-out infinite alternate;}
-    @keyframes cp-press{
-      0%{transform:rotate(0deg);}        /* arms at chest, elbows flared */
-      100%{transform:rotate(-55deg);}     /* arms extended upward */
-    }
-    /* dumbbells follow arms */
-    .cp-dbl{transform-origin:148px 95px; animation:cp-press 2.2s ease-in-out infinite alternate;}
-    .cp-dbr{transform-origin:152px 95px; animation:cp-press 2.2s ease-in-out infinite alternate;}
-    .cp-label{font:12px -apple-system,sans-serif;fill:#6b6860;}
-  </style>
-</defs>
-<!-- floor -->
-<line x1="20" y1="130" x2="300" y2="130" stroke="#e8e4dc" stroke-width="3" stroke-linecap="round"/>
-<!-- torso lying down -->
-<line x1="80" y1="100" x2="220" y2="100" class="cp-body" stroke-width="7"/>
-<!-- head -->
-<circle cx="240" cy="100" r="18" class="cp-body" stroke-width="4" fill="#faeeda"/>
-<!-- legs -->
-<line x1="80" y1="100" x2="50" y2="128" class="cp-body" stroke-width="6"/>
-<line x1="50" y1="128" x2="20" y2="128" class="cp-body" stroke-width="5"/>
-<line x1="80" y1="100" x2="55" y2="128" class="cp-body" stroke-width="6"/>
-<line x1="55" y1="128" x2="25" y2="128" class="cp-body" stroke-width="5"/>
-<!-- LEFT arm (near side) - elbow out, pivots from shoulder -->
-<g class="cp-arm-l">
-  <line x1="148" y1="95" x2="118" y2="75" class="cp-body" stroke-width="5"/>
-  <line x1="118" y1="75" x2="118" y2="50" class="cp-body" stroke-width="5"/>
-  <g class="cp-dbl">
-    <rect x="102" y="43" width="32" height="9" rx="3" class="cp-db"/>
-    <rect x="98" y="40" width="9" height="15" rx="2" class="cp-db"/>
-    <rect x="127" y="40" width="9" height="15" rx="2" class="cp-db"/>
-  </g>
+"chest-press": `<svg viewBox="0 0 340 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:190px;display:block;">
+<style>${CSS}
+  .cp-la{transform-origin:124px 108px;animation:cp 2.4s ease-in-out infinite alternate;}
+  .cp-ra{transform-origin:216px 108px;animation:cp 2.4s ease-in-out infinite alternate;}
+  @keyframes cp{
+    0%{transform:rotate(-48deg);}
+    100%{transform:rotate(0deg);}
+  }
+</style>
+<!-- floor mat -->
+<rect x="30" y="148" width="280" height="8" rx="4" fill="#c0dd97" opacity=".5"/>
+<!-- === LYING FIGURE: head right, feet left === -->
+<!-- Torso (shirt) lying horizontal -->
+<rect x="95" y="100" width="130" height="36" rx="12" class="shirt"/>
+<!-- Shorts/hips -->
+<rect x="68" y="108" width="40" height="30" rx="8" class="shorts"/>
+<!-- Legs -->
+<!-- Upper leg L -->
+<rect x="28" y="112" width="46" height="18" rx="9" class="shorts" transform="rotate(-8,28,121)"/>
+<!-- Lower leg L -->
+<rect x="8" y="124" width="42" height="14" rx="7" class="sk" transform="rotate(5,8,131)"/>
+<!-- Shoe L -->
+<ellipse cx="14" cy="136" rx="14" ry="7" class="shoe"/>
+<!-- Upper leg R -->
+<rect x="32" y="108" width="44" height="17" rx="8" class="shorts" transform="rotate(4,32,116)"/>
+<!-- Lower leg R -->
+<rect x="10" y="119" width="40" height="13" rx="6" class="sk" transform="rotate(2,10,125)"/>
+<!-- Shoe R -->
+<ellipse cx="12" cy="130" rx="13" ry="6" class="shoe"/>
+<!-- Head -->
+<circle cx="258" cy="110" r="20" class="sk"/>
+<!-- Hair -->
+<ellipse cx="258" cy="93" rx="18" ry="9" fill="#2c2c2a"/>
+<!-- Neck -->
+<rect x="246" y="115" width="24" height="12" rx="6" class="sk"/>
+<!-- Face detail -->
+<circle cx="252" cy="112" r="2" fill="#8B5E3C"/>
+<circle cx="263" cy="112" r="2" fill="#8B5E3C"/>
+<!-- Ear -->
+<ellipse cx="240" cy="110" rx="5" ry="7" class="sk"/>
+<!-- LEFT upper arm (near) -->
+<g class="cp-la">
+  <rect x="104" y="80" width="20" height="40" rx="10" class="sk" transform="rotate(-10,114,100)"/>
+  <ellipse cx="114" cy="78" rx="10" ry="6" class="sh"/>
+  <!-- forearm -->
+  <rect x="104" y="56" width="18" height="32" rx="9" class="sk" transform="rotate(-5,113,72)"/>
+  <!-- hand -->
+  <ellipse cx="113" cy="52" rx="9" ry="6" class="sk"/>
+  <!-- dumbbell left -->
+  <g transform="translate(113,44)">${db(0,0,34,12)}</g>
 </g>
-<!-- RIGHT arm (far side) -->
-<g class="cp-arm-r">
-  <line x1="152" y1="95" x2="182" y2="75" class="cp-body" stroke-width="5"/>
-  <line x1="182" y1="75" x2="182" y2="50" class="cp-body" stroke-width="5"/>
-  <g class="cp-dbr">
-    <rect x="167" y="43" width="32" height="9" rx="3" class="cp-db"/>
-    <rect x="163" y="40" width="9" height="15" rx="2" class="cp-db"/>
-    <rect x="192" y="40" width="9" height="15" rx="2" class="cp-db"/>
-  </g>
+<!-- RIGHT upper arm (far) -->
+<g class="cp-ra">
+  <rect x="216" y="80" width="20" height="40" rx="10" class="sk" transform="rotate(10,226,100)"/>
+  <ellipse cx="226" cy="78" rx="10" ry="6" class="sh"/>
+  <!-- forearm -->
+  <rect x="218" y="56" width="18" height="32" rx="9" class="sk" transform="rotate(5,227,72)"/>
+  <!-- hand -->
+  <ellipse cx="227" cy="52" rx="9" ry="6" class="sk"/>
+  <!-- dumbbell right -->
+  <g transform="translate(227,44)">${db(0,0,34,12)}</g>
 </g>
-<text x="160" y="175" text-anchor="middle" class="cp-label">Chest Press — Press up, 3-count lower</text>
+<!-- chest highlight -->
+<ellipse cx="170" cy="112" rx="30" ry="10" class="muscle"/>
+<text x="170" y="185" text-anchor="middle" class="lbl">Chest Press · Press up, 3-count lower, elbows 45°</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"incline-press": `<svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .ip-body{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .ip-db{fill:#ef9f27;stroke:#ba7517;stroke-width:1;}
-  /* figure reclined at ~35 degrees */
-  .ip-arm-l{transform-origin:135px 88px;animation:ip-p 2.2s ease-in-out infinite alternate;}
-  .ip-arm-r{transform-origin:145px 88px;animation:ip-p 2.2s ease-in-out infinite alternate;}
-  @keyframes ip-p{0%{transform:rotate(0deg);}100%{transform:rotate(-60deg);}}
-  .ip-label{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<!-- incline wedge -->
-<polygon points="30,140 200,140 200,90 30,140" fill="#f0ede8" stroke="#d3d1c7" stroke-width="1.5"/>
-<!-- figure reclined -->
-<!-- torso at incline angle -->
-<line x1="55" y1="132" x2="185" y2="90" fill="none" stroke="#2c3e50" stroke-width="7" stroke-linecap="round"/>
+// ──────────────────────────────────────────────────────────────────────────
+"incline-press": `<svg viewBox="0 0 340 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:190px;display:block;">
+<style>${CSS}
+  .ip-la{transform-origin:118px 102px;animation:ip 2.4s ease-in-out infinite alternate;}
+  .ip-ra{transform-origin:208px 96px;animation:ip 2.4s ease-in-out infinite alternate;}
+  @keyframes ip{0%{transform:rotate(-50deg);}100%{transform:rotate(0deg);}}
+</style>
+<!-- incline bench -->
+<rect x="20" y="138" width="180" height="12" rx="4" fill="#b4b2a9"/>
+<rect x="20" y="100" width="12" height="50" rx="4" fill="#888"/>
+<rect x="40" y="125" width="160" height="10" rx="4" fill="#d3d1c7" transform="rotate(-28,120,130)"/>
+<!-- figure reclined at ~28° incline -->
+<!-- torso on bench -->
+<rect x="75" y="90" width="115" height="34" rx="12" class="shirt" transform="rotate(-28,132,107)"/>
+<!-- shorts -->
+<rect x="55" y="108" width="38" height="28" rx="8" class="shorts" transform="rotate(-28,74,122)"/>
+<!-- legs hanging off bench -->
+<rect x="20" y="128" width="42" height="16" rx="8" class="shorts" transform="rotate(-10,41,136)"/>
+<rect x="8" y="138" width="36" height="13" rx="6" class="sk" transform="rotate(5,26,144)"/>
+<ellipse cx="10" cy="149" rx="12" ry="6" class="shoe"/>
 <!-- head -->
-<circle cx="198" cy="82" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- legs -->
-<line x1="55" y1="132" x2="35" y2="140" fill="none" stroke="#2c3e50" stroke-width="6" stroke-linecap="round"/>
-<line x1="35" y1="140" x2="18" y2="140" fill="none" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
+<circle cx="225" cy="72" r="19" class="sk"/>
+<ellipse cx="225" cy="56" rx="17" ry="8" fill="#2c2c2a"/>
+<rect x="214" y="78" width="22" height="11" rx="5" class="sk"/>
+<!-- LEFT arm presses up-angled -->
+<g class="ip-la">
+  <rect x="99" y="74" width="19" height="36" rx="9" class="sk" transform="rotate(-28,108,92)"/>
+  <rect x="100" y="50" width="17" height="30" rx="8" class="sk" transform="rotate(-22,108,65)"/>
+  <ellipse cx="108" cy="48" rx="9" ry="6" class="sk"/>
+  <g transform="translate(108,40)">${db(0,0,32,12)}</g>
+</g>
+<!-- RIGHT arm -->
+<g class="ip-ra">
+  <rect x="190" y="68" width="19" height="36" rx="9" class="sk" transform="rotate(28,199,86)"/>
+  <rect x="193" y="44" width="17" height="30" rx="8" class="sk" transform="rotate(22,201,59)"/>
+  <ellipse cx="200" cy="42" rx="9" ry="6" class="sk"/>
+  <g transform="translate(200,34)">${db(0,0,32,12)}</g>
+</g>
+<ellipse cx="160" cy="98" rx="25" ry="9" class="muscle"/>
+<text x="170" y="185" text-anchor="middle" class="lbl">Incline Press · Upper chest, press at upward angle</text>
+</svg>`,
+
+// ──────────────────────────────────────────────────────────────────────────
+"shoulder-press": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .sp-la{transform-origin:118px 112px;animation:sp 2.2s ease-in-out infinite alternate;}
+  .sp-ra{transform-origin:222px 112px;animation:sp 2.2s ease-in-out infinite alternate;}
+  @keyframes sp{0%{transform:rotate(0deg);}100%{transform:rotate(-78deg);}}
+</style>
+<!-- bench -->
+<rect x="112" y="168" width="116" height="14" rx="5" fill="#d3d1c7"/>
+<rect x="122" y="182" width="12" height="25" rx="4" fill="#b4b2a9"/>
+<rect x="206" y="182" width="12" height="25" rx="4" fill="#b4b2a9"/>
+<!-- floor -->
+<line x1="40" y1="207" x2="300" y2="207" stroke="#e8e4dc" stroke-width="3"/>
+<!-- torso seated -->
+<rect x="128" y="108" width="84" height="62" rx="14" class="shirt"/>
+<!-- shoulder caps -->
+<ellipse cx="128" cy="115" rx="14" ry="12" class="shirt"/>
+<ellipse cx="212" cy="115" rx="14" ry="12" class="shirt"/>
+<!-- shorts seated -->
+<rect x="122" y="158" width="96" height="26" rx="10" class="shorts"/>
+<!-- upper legs -->
+<rect x="100" y="166" width="52" height="20" rx="10" class="shorts"/>
+<rect x="188" y="166" width="52" height="20" rx="10" class="shorts"/>
+<!-- lower legs -->
+<rect x="95" y="182" width="20" height="28" rx="8" class="sk"/>
+<rect x="225" y="182" width="20" height="28" rx="8" class="sk"/>
+<!-- shoes -->
+<ellipse cx="88" cy="207" rx="18" ry="8" class="shoe"/>
+<ellipse cx="252" cy="207" rx="18" ry="8" class="shoe"/>
+<!-- neck -->
+<rect x="158" y="96" width="24" height="16" rx="8" class="sk"/>
+<!-- head -->
+<circle cx="170" cy="78" r="22" class="sk"/>
+<ellipse cx="170" cy="60" rx="20" ry="9" fill="#2c2c2a"/>
+<circle cx="163" cy="80" r="2.5" fill="#8B5E3C"/>
+<circle cx="177" cy="80" r="2.5" fill="#8B5E3C"/>
+<path d="M163,88 Q170,93 177,88" stroke="#c87840" stroke-width="1.5" fill="none"/>
+<!-- LEFT arm: upper arm out, forearm up, pivots overhead -->
+<g class="sp-la">
+  <!-- upper arm horizontal -->
+  <rect x="82" y="106" width="40" height="18" rx="9" class="sk"/>
+  <ellipse cx="82" cy="115" rx="10" ry="10" class="sh"/>
+  <!-- forearm up from elbow -->
+  <rect x="87" y="68" width="16" height="42" rx="8" class="sk"/>
+  <!-- hand -->
+  <ellipse cx="95" cy="66" rx="9" ry="6" class="sk"/>
+  <g transform="translate(95,52)">${db(0,0,32,13)}</g>
+</g>
+<!-- RIGHT arm -->
+<g class="sp-ra">
+  <rect x="218" y="106" width="40" height="18" rx="9" class="sk"/>
+  <ellipse cx="258" cy="115" rx="10" ry="10" class="sh"/>
+  <rect x="237" y="68" width="16" height="42" rx="8" class="sk"/>
+  <ellipse cx="245" cy="66" rx="9" ry="6" class="sk"/>
+  <g transform="translate(245,52)">${db(0,0,32,13)}</g>
+</g>
+<!-- deltoid highlight -->
+<ellipse cx="118" cy="112" rx="12" ry="10" class="muscle"/>
+<ellipse cx="222" cy="112" rx="12" ry="10" class="muscle"/>
+<text x="170" y="215" text-anchor="middle" class="lbl">Shoulder Press · Drive overhead, core braced</text>
+</svg>`,
+
+// ──────────────────────────────────────────────────────────────────────────
+"lateral-raise": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .lr-la{transform-origin:124px 118px;animation:lr-l 2.2s ease-in-out infinite alternate;}
+  .lr-ra{transform-origin:216px 118px;animation:lr-r 2.2s ease-in-out infinite alternate;}
+  @keyframes lr-l{0%{transform:rotate(0deg);}100%{transform:rotate(-72deg);}}
+  @keyframes lr-r{0%{transform:rotate(0deg);}100%{transform:rotate(72deg);}}
+</style>
+<line x1="40" y1="200" x2="300" y2="200" stroke="#e8e4dc" stroke-width="3"/>
+<!-- torso -->
+<rect x="132" y="106" width="76" height="70" rx="14" class="shirt"/>
+<ellipse cx="132" cy="114" rx="14" ry="13" class="shirt"/>
+<ellipse cx="208" cy="114" rx="14" ry="13" class="shirt"/>
+<!-- shorts -->
+<rect x="130" y="162" width="80" height="26" rx="10" class="shorts"/>
+<!-- upper legs -->
+<rect x="124" y="180" width="28" height="52" rx="12" class="shorts" transform="rotate(-4,138,206)"/>
+<rect x="188" y="180" width="28" height="52" rx="12" class="shorts" transform="rotate(4,202,206)"/>
+<!-- lower legs -->
+<rect x="118" y="220" width="22" height="0" rx="0" class="sk"/>
+<!-- knees -->
+<ellipse cx="136" cy="212" rx="12" ry="10" class="sk"/>
+<ellipse cx="204" cy="212" rx="12" ry="10" class="sk"/>
+<!-- lower legs -->
+<rect x="127" y="208" width="20" height="40" rx="8" class="sk" transform="rotate(-3,137,228)"/>
+<rect x="193" y="208" width="20" height="40" rx="8" class="sk" transform="rotate(3,203,228)"/>
+<!-- shoes -->
+<ellipse cx="130" cy="198" rx="18" ry="8" class="shoe" transform="rotate(-3)"/>
+<ellipse cx="210" cy="198" rx="18" ry="8" class="shoe" transform="rotate(3)"/>
+<!-- neck -->
+<rect x="158" y="96" width="24" height="14" rx="7" class="sk"/>
+<!-- head -->
+<circle cx="170" cy="76" r="22" class="sk"/>
+<ellipse cx="170" cy="58" rx="20" ry="9" fill="#2c2c2a"/>
+<circle cx="163" cy="78" r="2.5" fill="#8B5E3C"/>
+<circle cx="177" cy="78" r="2.5" fill="#8B5E3C"/>
 <!-- LEFT arm -->
-<g class="ip-arm-l">
-  <line x1="135" y1="88" x2="110" y2="72" fill="none" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
-  <line x1="110" y1="72" x2="112" y2="48" fill="none" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
-  <rect x="96" y="41" width="28" height="9" rx="3" class="ip-db"/>
-  <rect x="92" y="38" width="8" height="15" rx="2" class="ip-db"/>
-  <rect x="118" y="38" width="8" height="15" rx="2" class="ip-db"/>
+<g class="lr-la">
+  <rect x="96" y="110" width="32" height="16" rx="8" class="sk"/>
+  <ellipse cx="94" cy="118" rx="9" ry="9" class="sh"/>
+  <g transform="translate(78,118)">${db(0,0,28,11)}</g>
 </g>
 <!-- RIGHT arm -->
-<g class="ip-arm-r">
-  <line x1="145" y1="88" x2="168" y2="73" fill="none" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
-  <line x1="168" y1="73" x2="166" y2="49" fill="none" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
-  <rect x="152" y="41" width="28" height="9" rx="3" class="ip-db"/>
-  <rect x="148" y="38" width="8" height="15" rx="2" class="ip-db"/>
-  <rect x="174" y="38" width="8" height="15" rx="2" class="ip-db"/>
+<g class="lr-ra">
+  <rect x="212" y="110" width="32" height="16" rx="8" class="sk"/>
+  <ellipse cx="246" cy="118" rx="9" ry="9" class="sh"/>
+  <g transform="translate(262,118)">${db(0,0,28,11)}</g>
 </g>
-<text x="160" y="180" text-anchor="middle" class="ip-label">Incline Press — Upper chest focus</text>
+<!-- medial delt highlights -->
+<ellipse cx="122" cy="116" rx="11" ry="9" class="muscle"/>
+<ellipse cx="218" cy="116" rx="11" ry="9" class="muscle"/>
+<text x="170" y="215" text-anchor="middle" class="lbl">Lateral Raise · Raise to shoulder height, thumbs down</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"shoulder-press": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .sp-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .sp-db{fill:#ef9f27;stroke:#ba7517;stroke-width:1;}
-  /* seated figure, arms press overhead */
-  .sp-al{transform-origin:138px 100px;animation:sp-p 2s ease-in-out infinite alternate;}
-  .sp-ar{transform-origin:162px 100px;animation:sp-p 2s ease-in-out infinite alternate;}
-  @keyframes sp-p{
-    0%{transform:rotate(0deg);}   /* dumbbells at shoulders */
-    100%{transform:rotate(-80deg);} /* arms fully overhead */
-  }
-  .sp-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<!-- bench/chair -->
-<rect x="110" y="148" width="80" height="14" rx="3" fill="#d3d1c7"/>
-<rect x="125" y="162" width="10" height="22" rx="2" fill="#b4b2a9"/>
-<rect x="165" y="162" width="10" height="22" rx="2" fill="#b4b2a9"/>
-<!-- torso -->
-<line x1="150" y1="103" x2="150" y2="148" class="sp-b" stroke-width="7"/>
+// ──────────────────────────────────────────────────────────────────────────
+"tricep-kickback": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .tk-fa{transform-origin:230px 120px;animation:tk 2.2s ease-in-out infinite alternate;}
+  @keyframes tk{0%{transform:rotate(75deg);}100%{transform:rotate(0deg);}}
+</style>
+<line x1="40" y1="200" x2="300" y2="200" stroke="#e8e4dc" stroke-width="3"/>
+<!-- support surface (knee pad) -->
+<rect x="55" y="160" width="80" height="14" rx="5" fill="#d3d1c7"/>
+<rect x="70" y="174" width="14" height="20" rx="4" fill="#b4b2a9"/>
+<!-- === HINGED FIGURE facing left === -->
+<!-- Back leg (right, standing back) -->
+<rect x="192" y="148" width="24" height="56" rx="10" class="shorts"/>
+<ellipse cx="204" cy="205" rx="14" ry="7" class="shoe"/>
+<!-- Front leg (left, knee on pad) -->
+<rect x="100" y="148" width="24" height="34" rx="10" class="shorts" transform="rotate(5,112,165)"/>
+<rect x="85" y="170" width="58" height="16" rx="8" class="sk" transform="rotate(-5,114,178)"/>
+<!-- torso hinged ~38° forward -->
+<rect x="118" y="96" width="92" height="36" rx="14" class="shirt" transform="rotate(-38,164,114)"/>
+<!-- hip/shorts -->
+<rect x="118" y="122" width="72" height="28" rx="12" class="shorts" transform="rotate(-38,154,136)"/>
+<!-- support arm (left, on bench) -->
+<rect x="75" y="110" width="16" height="56" rx="8" class="sk" transform="rotate(38,83,138)"/>
+<ellipse cx="72" cy="158" rx="10" ry="7" class="sk"/>
 <!-- head -->
-<circle cx="150" cy="88" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- legs seated -->
-<line x1="140" y1="148" x2="115" y2="155" class="sp-b" stroke-width="6"/>
-<line x1="115" y1="155" x2="110" y2="183" class="sp-b" stroke-width="5"/>
-<line x1="160" y1="148" x2="185" y2="155" class="sp-b" stroke-width="6"/>
-<line x1="185" y1="155" x2="190" y2="183" class="sp-b" stroke-width="5"/>
-<!-- LEFT arm: from shoulder, elbow out, forearm up, dumbbell -->
-<g class="sp-al">
-  <line x1="138" y1="100" x2="108" y2="108" class="sp-b" stroke-width="5"/>
-  <line x1="108" y1="108" x2="108" y2="72" class="sp-b" stroke-width="5"/>
-  <rect x="93" y="63" width="30" height="9" rx="3" class="sp-db"/>
-  <rect x="89" y="60" width="9" height="16" rx="2" class="sp-db"/>
-  <rect x="116" y="60" width="9" height="16" rx="2" class="sp-db"/>
-</g>
-<!-- RIGHT arm -->
-<g class="sp-ar">
-  <line x1="162" y1="100" x2="192" y2="108" class="sp-b" stroke-width="5"/>
-  <line x1="192" y1="108" x2="192" y2="72" class="sp-b" stroke-width="5"/>
-  <rect x="178" y="63" width="30" height="9" rx="3" class="sp-db"/>
-  <rect x="174" y="60" width="9" height="16" rx="2" class="sp-db"/>
-  <rect x="201" y="60" width="9" height="16" rx="2" class="sp-db"/>
-</g>
-<text x="160" y="200" text-anchor="middle" class="sp-lbl">Shoulder Press — Drive overhead, core tight</text>
-</svg>`,
-
-// ──────────────────────────────────────────────────────────
-"lateral-raise": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .lr-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .lr-db{fill:#378add;stroke:#185fa5;stroke-width:1;}
-  /* arms raise from sides to shoulder height */
-  .lr-al{transform-origin:138px 105px;animation:lr-up 2s ease-in-out infinite alternate;}
-  .lr-ar{transform-origin:162px 105px;animation:lr-up 2s ease-in-out infinite alternate;}
-  @keyframes lr-up{
-    0%{transform:rotate(0deg);}    /* arms at sides */
-    100%{transform:rotate(-75deg);} /* arms at shoulder height */
-  }
-  /* mirror right arm */
-  .lr-ar{animation:lr-down 2s ease-in-out infinite alternate;}
-  @keyframes lr-down{
-    0%{transform:rotate(0deg);}
-    100%{transform:rotate(75deg);}
-  }
-  .lr-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<!-- floor -->
-<line x1="50" y1="185" x2="270" y2="185" stroke="#e8e4dc" stroke-width="3" stroke-linecap="round"/>
-<!-- torso -->
-<line x1="150" y1="110" x2="150" y2="160" class="lr-b" stroke-width="7"/>
-<!-- head -->
-<circle cx="150" cy="93" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- legs standing -->
-<line x1="145" y1="160" x2="132" y2="185" class="lr-b" stroke-width="6"/>
-<line x1="155" y1="160" x2="168" y2="185" class="lr-b" stroke-width="6"/>
-<!-- LEFT arm — raises to left -->
-<g class="lr-al">
-  <line x1="138" y1="105" x2="95" y2="120" class="lr-b" stroke-width="5"/>
-  <rect x="75" y="113" width="26" height="8" rx="3" class="lr-db"/>
-  <rect x="71" y="111" width="8" height="13" rx="2" class="lr-db"/>
-  <rect x="96" y="111" width="8" height="13" rx="2" class="lr-db"/>
-</g>
-<!-- RIGHT arm — raises to right -->
-<g class="lr-ar">
-  <line x1="162" y1="105" x2="205" y2="120" class="lr-b" stroke-width="5"/>
-  <rect x="199" y="113" width="26" height="8" rx="3" class="lr-db"/>
-  <rect x="195" y="111" width="8" height="13" rx="2" class="lr-db"/>
-  <rect x="220" y="111" width="8" height="13" rx="2" class="lr-db"/>
-</g>
-<text x="160" y="200" text-anchor="middle" class="lr-lbl">Lateral Raise — Raise to shoulder height</text>
-</svg>`,
-
-// ──────────────────────────────────────────────────────────
-"tricep-kickback": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .tk-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .tk-db{fill:#4a8c1c;stroke:#3b6d11;stroke-width:1;}
-  /* hinged-over figure, forearm swings back from elbow */
-  .tk-fa{transform-origin:185px 115px;animation:tk-kick 2s ease-in-out infinite alternate;}
-  @keyframes tk-kick{
-    0%{transform:rotate(70deg);}   /* forearm hanging down */
-    100%{transform:rotate(0deg);}  /* forearm fully extended back */
-  }
-  .tk-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<!-- floor line -->
-<line x1="30" y1="185" x2="290" y2="185" stroke="#e8e4dc" stroke-width="3"/>
-<!-- hinged torso ~45 deg -->
-<line x1="105" y1="155" x2="195" y2="100" class="tk-b" stroke-width="7"/>
-<!-- head -->
-<circle cx="208" cy="90" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- support arm (left, braced on knee) -->
-<line x1="118" y1="142" x2="95" y2="118" class="tk-b" stroke-width="5"/>
-<line x1="95" y1="118" x2="82" y2="140" class="tk-b" stroke-width="5"/>
-<!-- brace leg with knee for support arm -->
-<rect x="72" y="138" width="22" height="10" rx="3" fill="#f0ede8" stroke="#d3d1c7" stroke-width="1"/>
-<!-- left leg bent/standing -->
-<line x1="105" y1="155" x2="88" y2="182" class="tk-b" stroke-width="6"/>
-<line x1="88" y1="182" x2="65" y2="185" class="tk-b" stroke-width="5"/>
-<!-- right leg back/standing -->
-<line x1="105" y1="155" x2="118" y2="183" class="tk-b" stroke-width="6"/>
-<line x1="118" y1="183" x2="142" y2="185" class="tk-b" stroke-width="5"/>
-<!-- working arm: upper arm parallel to torso/floor, elbow back -->
-<line x1="182" y1="107" x2="185" y2="115" class="tk-b" stroke-width="5"/>
-<line x1="182" y1="107" x2="165" y2="100" class="tk-b" stroke-width="5"/>
-<!-- forearm hinges at elbow (185,115) -->
+<circle cx="245" cy="72" r="21" class="sk"/>
+<ellipse cx="245" cy="55" rx="19" ry="8" fill="#2c2c2a"/>
+<circle cx="238" cy="74" r="2.5" fill="#8B5E3C"/>
+<circle cx="252" cy="74" r="2.5" fill="#8B5E3C"/>
+<!-- neck -->
+<rect x="234" y="80" width="22" height="12" rx="6" class="sk"/>
+<!-- working UPPER arm (pinned parallel to torso/floor) -->
+<rect x="188" y="112" width="46" height="16" rx="8" class="sk" transform="rotate(-38,211,120)"/>
+<!-- elbow joint -->
+<ellipse cx="230" cy="119" rx="9" ry="9" class="sh"/>
+<!-- FOREARM animates from elbow - hangs down then kicks back -->
 <g class="tk-fa">
-  <line x1="185" y1="115" x2="220" y2="115" class="tk-b" stroke-width="5"/>
-  <rect x="216" y="108" width="26" height="8" rx="3" class="tk-db"/>
-  <rect x="212" y="105" width="8" height="14" rx="2" class="tk-db"/>
-  <rect x="237" y="105" width="8" height="14" rx="2" class="tk-db"/>
+  <rect x="222" y="120" width="14" height="44" rx="7" class="sk"/>
+  <ellipse cx="229" cy="166" rx="8" ry="6" class="sk"/>
+  <g transform="translate(229,172)">${db(0,0,30,11)}</g>
 </g>
-<text x="160" y="200" text-anchor="middle" class="tk-lbl">Tricep Kickback — Extend fully, squeeze</text>
+<!-- tricep highlight -->
+<ellipse cx="212" cy="116" rx="18" ry="7" class="muscle"/>
+<text x="170" y="215" text-anchor="middle" class="lbl">Tricep Kickback · Elbow pinned, extend fully</text>
 </svg>`,
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // PULL DAY
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
-"bent-over-row": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .br-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .br-db{fill:#378add;stroke:#185fa5;stroke-width:1;}
-  /* arms pull from hanging down up to hip/ribcage */
-  .br-al{transform-origin:132px 115px;animation:br-row 2.2s ease-in-out infinite alternate;}
-  .br-ar{transform-origin:168px 115px;animation:br-row 2.2s ease-in-out infinite alternate;}
-  @keyframes br-row{
-    0%{transform:rotate(0deg);}    /* arms hanging */
-    100%{transform:rotate(-80deg);} /* pulled to ribcage */
-  }
-  .br-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="30" y1="185" x2="290" y2="185" stroke="#e8e4dc" stroke-width="3"/>
-<!-- hinged torso horizontal -->
-<line x1="150" y1="110" x2="150" y2="148" class="br-b" stroke-width="7"/>
-<!-- torso top to hip — horizontal hinge -->
-<line x1="100" y1="115" x2="175" y2="110" class="br-b" stroke-width="7"/>
+"bent-over-row": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .br-la{transform-origin:116px 130px;animation:br 2.4s ease-in-out infinite alternate;}
+  .br-ra{transform-origin:218px 130px;animation:br 2.4s ease-in-out infinite alternate;}
+  @keyframes br{0%{transform:rotate(0deg);}100%{transform:rotate(-85deg);}}
+</style>
+<line x1="40" y1="200" x2="300" y2="200" stroke="#e8e4dc" stroke-width="3"/>
+<!-- legs: bent at ~20° -->
+<!-- left upper leg -->
+<rect x="102" y="152" width="28" height="52" rx="12" class="shorts" transform="rotate(8,116,178)"/>
+<ellipse cx="112" cy="196" rx="14" ry="8" class="shoe" transform="rotate(5)"/>
+<!-- right upper leg -->
+<rect x="202" y="152" width="28" height="52" rx="12" class="shorts" transform="rotate(-8,216,178)"/>
+<ellipse cx="216" cy="196" rx="14" ry="8" class="shoe" transform="rotate(-5)"/>
+<!-- lower legs -->
+<rect x="100" y="192" width="24" height="0" class="sk"/><!-- knees drawn via ellipse -->
+<ellipse cx="114" cy="193" rx="13" ry="9" class="sk"/>
+<ellipse cx="218" cy="193" rx="13" ry="9" class="sk"/>
+<rect x="103" y="190" width="22" height="14" rx="8" class="sk" transform="rotate(8)"/>
+<rect x="207" y="190" width="22" height="14" rx="8" class="sk" transform="rotate(-8)"/>
+<!-- hip/shorts central -->
+<rect x="130" y="138" width="80" height="28" rx="12" class="shorts"/>
+<!-- torso hinged horizontal -->
+<rect x="118" y="98" width="104" height="44" rx="16" class="shirt" transform="rotate(-5,170,120)"/>
+<!-- back muscle highlight -->
+<ellipse cx="170" cy="108" rx="38" ry="12" class="muscle"/>
+<!-- shoulder caps -->
+<ellipse cx="120" cy="104" rx="14" ry="12" class="shirt" transform="rotate(-5)"/>
+<ellipse cx="220" cy="104" rx="14" ry="12" class="shirt" transform="rotate(5)"/>
+<!-- neck -->
+<rect x="208" y="86" width="22" height="12" rx="6" class="sk"/>
 <!-- head -->
-<circle cx="185" cy="107" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- legs bent slightly -->
-<line x1="150" y1="148" x2="128" y2="183" class="br-b" stroke-width="6"/>
-<line x1="128" y1="183" x2="105" y2="185" class="br-b" stroke-width="5"/>
-<line x1="150" y1="148" x2="172" y2="183" class="br-b" stroke-width="6"/>
-<line x1="172" y1="183" x2="195" y2="185" class="br-b" stroke-width="5"/>
-<!-- LEFT arm hangs from shoulder, pulls up -->
-<g class="br-al">
-  <line x1="132" y1="115" x2="132" y2="152" class="br-b" stroke-width="5"/>
-  <rect x="118" y="148" width="28" height="9" rx="3" class="br-db"/>
-  <rect x="114" y="145" width="9" height="16" rx="2" class="br-db"/>
-  <rect x="140" y="145" width="9" height="16" rx="2" class="br-db"/>
+<circle cx="230" cy="68" r="21" class="sk"/>
+<ellipse cx="230" cy="51" rx="19" ry="8" fill="#2c2c2a"/>
+<!-- LEFT arm hangs, pulls up to hip -->
+<g class="br-la">
+  <rect x="102" y="120" width="16" height="44" rx="8" class="sk"/>
+  <ellipse cx="110" cy="166" rx="9" ry="7" class="sk"/>
+  <g transform="translate(110,172)">${db(0,0,34,12)}</g>
 </g>
 <!-- RIGHT arm -->
-<g class="br-ar">
-  <line x1="168" y1="115" x2="168" y2="152" class="br-b" stroke-width="5"/>
-  <rect x="154" y="148" width="28" height="9" rx="3" class="br-db"/>
-  <rect x="150" y="145" width="9" height="16" rx="2" class="br-db"/>
-  <rect x="176" y="145" width="9" height="16" rx="2" class="br-db"/>
+<g class="br-ra">
+  <rect x="210" y="120" width="16" height="44" rx="8" class="sk"/>
+  <ellipse cx="218" cy="166" rx="9" ry="7" class="sk"/>
+  <g transform="translate(218,172)">${db(0,0,34,12)}</g>
 </g>
-<text x="160" y="200" text-anchor="middle" class="br-lbl">Bent-Over Row — Pull to hip, squeeze back</text>
+<text x="170" y="215" text-anchor="middle" class="lbl">Bent-Over Row · Pull to hip, squeeze shoulder blades</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"single-arm-row": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .sar-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .sar-db{fill:#1d9e75;stroke:#0f6e56;stroke-width:1;}
-  .sar-arm{transform-origin:188px 115px;animation:sar-r 2.2s ease-in-out infinite alternate;}
-  @keyframes sar-r{
-    0%{transform:rotate(0deg);}
-    100%{transform:rotate(-85deg);}
-  }
-  .sar-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="30" y1="185" x2="290" y2="185" stroke="#e8e4dc" stroke-width="3"/>
-<!-- bench for support -->
-<rect x="50" y="143" width="75" height="14" rx="4" fill="#d3d1c7"/>
-<rect x="60" y="157" width="10" height="22" rx="2" fill="#b4b2a9"/>
-<rect x="105" y="157" width="10" height="22" rx="2" fill="#b4b2a9"/>
-<!-- torso hinged parallel -->
-<line x1="115" y1="118" x2="200" y2="112" class="sar-b" stroke-width="7"/>
-<!-- head -->
-<circle cx="212" cy="104" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
+// ──────────────────────────────────────────────────────────────────────────
+"single-arm-row": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .sar-wa{transform-origin:234px 122px;animation:sar 2.4s ease-in-out infinite alternate;}
+  @keyframes sar{0%{transform:rotate(0deg);}100%{transform:rotate(-88deg);}}
+</style>
+<line x1="40" y1="200" x2="300" y2="200" stroke="#e8e4dc" stroke-width="3"/>
+<!-- bench -->
+<rect x="48" y="150" width="96" height="14" rx="5" fill="#d3d1c7"/>
+<rect x="58" y="164" width="14" height="28" rx="4" fill="#b4b2a9"/>
+<rect x="118" y="164" width="14" height="28" rx="4" fill="#b4b2a9"/>
+<!-- back leg (standing) -->
+<rect x="218" y="148" width="28" height="58" rx="12" class="shorts"/>
+<ellipse cx="232" cy="200" rx="16" ry="8" class="shoe"/>
+<!-- front leg (knee on bench) -->
+<rect x="90" y="148" width="26" height="18" rx="9" class="shorts"/>
+<rect x="72" y="155" width="52" height="16" rx="8" class="sk"/>
+<!-- torso hinged -->
+<rect x="112" y="96" width="100" height="40" rx="15" class="shirt" transform="rotate(-8,162,116)"/>
+<ellipse cx="234" cy="112" rx="14" ry="13" class="shirt"/>
+<ellipse cx="114" cy="108" rx="13" ry="12" class="shirt"/>
+<!-- back highlight -->
+<ellipse cx="175" cy="106" rx="35" ry="11" class="muscle"/>
 <!-- support arm on bench -->
-<line x1="128" y1="118" x2="90" y2="143" class="sar-b" stroke-width="5"/>
-<!-- support leg -->
-<line x1="115" y1="118" x2="95" y2="145" class="sar-b" stroke-width="6"/>
-<!-- back leg standing -->
-<line x1="115" y1="118" x2="115" y2="183" class="sar-b" stroke-width="6"/>
-<line x1="115" y1="183" x2="93" y2="185" class="sar-b" stroke-width="5"/>
-<!-- working arm hangs, pulls up -->
-<g class="sar-arm">
-  <line x1="188" y1="115" x2="188" y2="155" class="sar-b" stroke-width="5"/>
-  <rect x="174" y="151" width="28" height="9" rx="3" class="sar-db"/>
-  <rect x="170" y="148" width="9" height="15" rx="2" class="sar-db"/>
-  <rect x="196" y="148" width="9" height="15" rx="2" class="sar-db"/>
+<rect x="78" y="108" width="15" height="46" rx="7" class="sk" transform="rotate(14,85,131)"/>
+<ellipse cx="78" cy="151" rx="10" ry="7" class="sk"/>
+<!-- neck+head -->
+<rect x="228" y="82" width="22" height="12" rx="6" class="sk"/>
+<circle cx="248" cy="64" r="21" class="sk"/>
+<ellipse cx="248" cy="47" rx="19" ry="8" fill="#2c2c2a"/>
+<!-- working arm -->
+<g class="sar-wa">
+  <rect x="226" y="122" width="16" height="46" rx="8" class="sk"/>
+  <ellipse cx="234" cy="170" rx="9" ry="7" class="sk"/>
+  <g transform="translate(234,176)">${db(0,0,34,12)}</g>
 </g>
-<text x="160" y="200" text-anchor="middle" class="sar-lbl">Single-Arm Row — Full stretch, pull to hip</text>
+<text x="170" y="215" text-anchor="middle" class="lbl">Single-Arm Row · Full stretch, pull to hip</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"bicep-curl": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .bc-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .bc-db{fill:#ef9f27;stroke:#ba7517;stroke-width:1;}
-  /* forearms curl up from hanging (0°) to fully curled (~130°) */
-  .bc-al{transform-origin:136px 125px;animation:bc-curl 2s ease-in-out infinite alternate;}
-  .bc-ar{transform-origin:164px 125px;animation:bc-curl2 2.3s ease-in-out infinite alternate;}
-  @keyframes bc-curl{
-    0%{transform:rotate(0deg);}
-    100%{transform:rotate(-130deg);}
-  }
-  @keyframes bc-curl2{
-    0%,20%{transform:rotate(0deg);}
-    100%{transform:rotate(-130deg);}
-  }
-  .bc-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="50" y1="187" x2="270" y2="187" stroke="#e8e4dc" stroke-width="3"/>
-<!-- torso standing -->
-<line x1="150" y1="105" x2="150" y2="158" class="bc-b" stroke-width="7"/>
-<!-- head -->
-<circle cx="150" cy="90" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- legs -->
-<line x1="145" y1="158" x2="132" y2="185" class="bc-b" stroke-width="6"/>
-<line x1="132" y1="185" x2="118" y2="187" class="bc-b" stroke-width="5"/>
-<line x1="155" y1="158" x2="168" y2="185" class="bc-b" stroke-width="6"/>
-<line x1="168" y1="185" x2="182" y2="187" class="bc-b" stroke-width="5"/>
+// ──────────────────────────────────────────────────────────────────────────
+"bicep-curl": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .bc-lfa{transform-origin:128px 138px;animation:bc-l 2.2s ease-in-out infinite alternate;}
+  .bc-rfa{transform-origin:212px 138px;animation:bc-r 2.6s ease-in-out infinite alternate;}
+  @keyframes bc-l{0%{transform:rotate(0deg);}100%{transform:rotate(-128deg);}}
+  @keyframes bc-r{0%,20%{transform:rotate(0deg);}100%{transform:rotate(-128deg);}}
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
+<!-- torso -->
+<rect x="132" y="100" width="76" height="68" rx="14" class="shirt"/>
+<ellipse cx="132" cy="110" rx="15" ry="13" class="shirt"/>
+<ellipse cx="208" cy="110" rx="15" ry="13" class="shirt"/>
+<!-- shorts -->
+<rect x="128" y="156" width="84" height="26" rx="11" class="shorts"/>
+<!-- upper legs -->
+<rect x="122" y="174" width="28" height="54" rx="12" class="shorts" transform="rotate(-4,136,201)"/>
+<rect x="190" y="174" width="28" height="54" rx="12" class="shorts" transform="rotate(4,204,201)"/>
+<!-- knees + lower legs -->
+<ellipse cx="134" cy="206" rx="13" ry="10" class="sk"/>
+<ellipse cx="206" cy="206" rx="13" ry="10" class="sk"/>
+<rect x="125" y="202" width="20" height="0" class="sk"/>
+<!-- shoes -->
+<ellipse cx="130" cy="200" rx="18" ry="8" class="shoe"/>
+<ellipse cx="210" cy="200" rx="18" ry="8" class="shoe"/>
+<!-- neck+head -->
+<rect x="158" y="90" width="24" height="14" rx="7" class="sk"/>
+<circle cx="170" cy="70" r="22" class="sk"/>
+<ellipse cx="170" cy="52" rx="20" ry="9" fill="#2c2c2a"/>
+<circle cx="163" cy="72" r="2.5" fill="#8B5E3C"/>
+<circle cx="177" cy="72" r="2.5" fill="#8B5E3C"/>
 <!-- upper arms pinned at sides -->
-<line x1="136" y1="108" x2="136" y2="125" class="bc-b" stroke-width="5"/>
-<line x1="164" y1="108" x2="164" y2="125" class="bc-b" stroke-width="5"/>
-<!-- LEFT forearm curls (pivots at elbow = 136,125) -->
-<g class="bc-al">
-  <line x1="136" y1="125" x2="136" y2="158" class="bc-b" stroke-width="5"/>
-  <rect x="122" y="154" width="28" height="9" rx="3" class="bc-db"/>
-  <rect x="118" y="151" width="9" height="16" rx="2" class="bc-db"/>
-  <rect x="144" y="151" width="9" height="16" rx="2" class="bc-db"/>
+<rect x="106" y="112" width="26" height="32" rx="10" class="sk"/>
+<ellipse cx="128" cy="112" rx="12" ry="10" class="sh"/>
+<rect x="208" y="112" width="26" height="32" rx="10" class="sk"/>
+<ellipse cx="212" cy="112" rx="12" ry="10" class="sh"/>
+<!-- bicep peak highlight -->
+<ellipse cx="114" cy="120" rx="10" ry="14" class="muscle"/>
+<ellipse cx="226" cy="120" rx="10" ry="14" class="muscle"/>
+<!-- LEFT forearm curls at elbow -->
+<g class="bc-lfa">
+  <rect x="118" y="138" width="18" height="42" rx="9" class="sk"/>
+  <ellipse cx="127" cy="182" rx="10" ry="7" class="sk"/>
+  <g transform="translate(127,188)">${db(0,0,32,12)}</g>
 </g>
-<!-- RIGHT forearm (slight delay alternate) -->
-<g class="bc-ar">
-  <line x1="164" y1="125" x2="164" y2="158" class="bc-b" stroke-width="5"/>
-  <rect x="150" y="154" width="28" height="9" rx="3" class="bc-db"/>
-  <rect x="146" y="151" width="9" height="16" rx="2" class="bc-db"/>
-  <rect x="172" y="151" width="9" height="16" rx="2" class="bc-db"/>
+<!-- RIGHT forearm (slight delay) -->
+<g class="bc-rfa">
+  <rect x="203" y="138" width="18" height="42" rx="9" class="sk"/>
+  <ellipse cx="212" cy="182" rx="10" ry="7" class="sk"/>
+  <g transform="translate(212,188)">${db(0,0,32,12)}</g>
 </g>
-<text x="160" y="202" text-anchor="middle" class="bc-lbl">Bicep Curl — Squeeze top, slow 3-count down</text>
+<text x="170" y="216" text-anchor="middle" class="lbl">Bicep Curl · Squeeze at top, 3-count lower</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"hammer-curl": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .hc-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .hc-db{fill:#e24b4a;stroke:#a32d2d;stroke-width:1;}
-  /* neutral grip: dumbbell vertical, forearms curl up */
-  .hc-al{transform-origin:138px 125px;animation:hc-c 2s ease-in-out infinite alternate;}
-  .hc-ar{transform-origin:162px 125px;animation:hc-c2 2.4s ease-in-out infinite alternate;}
-  @keyframes hc-c{0%{transform:rotate(0deg);}100%{transform:rotate(-120deg);}}
-  @keyframes hc-c2{0%,25%{transform:rotate(0deg);}100%{transform:rotate(-120deg);}}
-  .hc-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="50" y1="187" x2="270" y2="187" stroke="#e8e4dc" stroke-width="3"/>
-<line x1="150" y1="105" x2="150" y2="158" class="hc-b" stroke-width="7"/>
-<circle cx="150" cy="90" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<line x1="145" y1="158" x2="132" y2="185" class="hc-b" stroke-width="6"/>
-<line x1="155" y1="158" x2="168" y2="185" class="hc-b" stroke-width="6"/>
+// ──────────────────────────────────────────────────────────────────────────
+"hammer-curl": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .hc-lfa{transform-origin:126px 138px;animation:hc-l 2.2s ease-in-out infinite alternate;}
+  .hc-rfa{transform-origin:214px 138px;animation:hc-r 2.7s ease-in-out infinite alternate;}
+  @keyframes hc-l{0%{transform:rotate(0deg);}100%{transform:rotate(-122deg);}}
+  @keyframes hc-r{0%,22%{transform:rotate(0deg);}100%{transform:rotate(-122deg);}}
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
+<rect x="132" y="100" width="76" height="68" rx="14" class="shirt"/>
+<ellipse cx="132" cy="110" rx="15" ry="13" class="shirt"/>
+<ellipse cx="208" cy="110" rx="15" ry="13" class="shirt"/>
+<rect x="128" y="156" width="84" height="26" rx="11" class="shorts"/>
+<rect x="122" y="174" width="28" height="54" rx="12" class="shorts" transform="rotate(-4,136,201)"/>
+<rect x="190" y="174" width="28" height="54" rx="12" class="shorts" transform="rotate(4,204,201)"/>
+<ellipse cx="134" cy="206" rx="13" ry="10" class="sk"/>
+<ellipse cx="206" cy="206" rx="13" ry="10" class="sk"/>
+<ellipse cx="130" cy="200" rx="18" ry="8" class="shoe"/>
+<ellipse cx="210" cy="200" rx="18" ry="8" class="shoe"/>
+<rect x="158" y="90" width="24" height="14" rx="7" class="sk"/>
+<circle cx="170" cy="70" r="22" class="sk"/>
+<ellipse cx="170" cy="52" rx="20" ry="9" fill="#2c2c2a"/>
 <!-- upper arms -->
-<line x1="138" y1="108" x2="138" y2="125" class="hc-b" stroke-width="5"/>
-<line x1="162" y1="108" x2="162" y2="125" class="hc-b" stroke-width="5"/>
-<!-- LEFT forearm + vertical dumbbell (hammer grip) -->
-<g class="hc-al">
-  <line x1="138" y1="125" x2="138" y2="158" class="hc-b" stroke-width="5"/>
-  <!-- vertical dumbbell = neutral/hammer grip -->
-  <rect x="130" y="155" width="16" height="38" rx="4" class="hc-db"/>
-  <rect x="124" y="151" width="12" height="14" rx="3" class="hc-db"/>
-  <rect x="124" y="174" width="12" height="14" rx="3" class="hc-db"/>
+<rect x="104" y="112" width="26" height="32" rx="10" class="sk"/>
+<ellipse cx="126" cy="112" rx="12" ry="10" class="sh"/>
+<rect x="210" y="112" width="26" height="32" rx="10" class="sk"/>
+<ellipse cx="214" cy="112" rx="12" ry="10" class="sh"/>
+<ellipse cx="112" cy="120" rx="10" ry="14" class="muscle"/>
+<ellipse cx="228" cy="120" rx="10" ry="14" class="muscle"/>
+<!-- brachialis highlight (side) -->
+<ellipse cx="103" cy="128" rx="6" ry="12" fill="#c87840" opacity=".4"/>
+<ellipse cx="237" cy="128" rx="6" ry="12" fill="#c87840" opacity=".4"/>
+<!-- LEFT forearm + VERTICAL dumbbell (hammer/neutral grip) -->
+<g class="hc-lfa">
+  <rect x="117" y="138" width="18" height="40" rx="9" class="sk"/>
+  <ellipse cx="126" cy="180" rx="9" ry="7" class="sk"/>
+  <!-- vertical dumbbell -->
+  <g transform="translate(126,172)">${dbV(0,0,30,13)}</g>
 </g>
 <!-- RIGHT forearm -->
-<g class="hc-ar">
-  <line x1="162" y1="125" x2="162" y2="158" class="hc-b" stroke-width="5"/>
-  <rect x="154" y="155" width="16" height="38" rx="4" class="hc-db"/>
-  <rect x="148" y="151" width="12" height="14" rx="3" class="hc-db"/>
-  <rect x="148" y="174" width="12" height="14" rx="3" class="hc-db"/>
+<g class="hc-rfa">
+  <rect x="205" y="138" width="18" height="40" rx="9" class="sk"/>
+  <ellipse cx="214" cy="180" rx="9" ry="7" class="sk"/>
+  <g transform="translate(214,172)">${dbV(0,0,30,13)}</g>
 </g>
-<text x="160" y="205" text-anchor="middle" class="hc-lbl">Hammer Curl — Thumbs up, neutral grip</text>
+<text x="170" y="216" text-anchor="middle" class="lbl">Hammer Curl · Neutral grip, thumbs up throughout</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"reverse-fly": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .rf-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .rf-db{fill:#1d9e75;stroke:#0f6e56;stroke-width:1;}
-  /* bent over, arms raise laterally from hanging to shoulder height */
-  .rf-al{transform-origin:132px 112px;animation:rf-r 2.2s ease-in-out infinite alternate;}
-  .rf-ar{transform-origin:168px 112px;animation:rf-r2 2.2s ease-in-out infinite alternate;}
-  @keyframes rf-r{0%{transform:rotate(0deg);}100%{transform:rotate(-80deg);}}
-  @keyframes rf-r2{0%{transform:rotate(0deg);}100%{transform:rotate(80deg);}}
-  .rf-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="30" y1="185" x2="290" y2="185" stroke="#e8e4dc" stroke-width="3"/>
-<!-- bent torso ~45° -->
-<line x1="108" y1="118" x2="185" y2="108" class="rf-b" stroke-width="7"/>
-<!-- hip/lower torso -->
-<line x1="108" y1="118" x2="150" y2="148" class="rf-b" stroke-width="7"/>
-<!-- head -->
-<circle cx="196" cy="103" r="16" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- legs -->
-<line x1="150" y1="148" x2="132" y2="183" class="rf-b" stroke-width="6"/>
-<line x1="150" y1="148" x2="168" y2="183" class="rf-b" stroke-width="6"/>
-<!-- LEFT arm hangs, raises to side -->
-<g class="rf-al">
-  <line x1="132" y1="112" x2="132" y2="148" class="rf-b" stroke-width="5"/>
-  <rect x="118" y="145" width="26" height="8" rx="3" class="rf-db"/>
-  <rect x="114" y="142" width="8" height="14" rx="2" class="rf-db"/>
-  <rect x="138" y="142" width="8" height="14" rx="2" class="rf-db"/>
+// ──────────────────────────────────────────────────────────────────────────
+"reverse-fly": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .rf-la{transform-origin:116px 122px;animation:rf-l 2.3s ease-in-out infinite alternate;}
+  .rf-ra{transform-origin:224px 122px;animation:rf-r 2.3s ease-in-out infinite alternate;}
+  @keyframes rf-l{0%{transform:rotate(0deg);}100%{transform:rotate(-78deg);}}
+  @keyframes rf-r{0%{transform:rotate(0deg);}100%{transform:rotate(78deg);}}
+</style>
+<line x1="40" y1="200" x2="300" y2="200" stroke="#e8e4dc" stroke-width="3"/>
+<!-- bent-over stance same as bent-over-row -->
+<rect x="102" y="152" width="28" height="52" rx="12" class="shorts" transform="rotate(8,116,178)"/>
+<ellipse cx="112" cy="196" rx="14" ry="8" class="shoe"/>
+<rect x="202" y="152" width="28" height="52" rx="12" class="shorts" transform="rotate(-8,216,178)"/>
+<ellipse cx="216" cy="196" rx="14" ry="8" class="shoe"/>
+<ellipse cx="114" cy="193" rx="13" ry="9" class="sk"/>
+<ellipse cx="218" cy="193" rx="13" ry="9" class="sk"/>
+<rect x="130" y="138" width="80" height="28" rx="12" class="shorts"/>
+<!-- torso hinged -->
+<rect x="118" y="96" width="104" height="44" rx="16" class="shirt" transform="rotate(-5,170,118)"/>
+<ellipse cx="120" cy="103" rx="14" ry="12" class="shirt"/>
+<ellipse cx="220" cy="103" rx="14" ry="12" class="shirt"/>
+<!-- rear delt highlights -->
+<ellipse cx="119" cy="105" rx="12" ry="10" class="muscle"/>
+<ellipse cx="221" cy="105" rx="12" ry="10" class="muscle"/>
+<!-- rhomboid / mid-back highlight -->
+<ellipse cx="170" cy="105" rx="28" ry="9" fill="#c87840" opacity=".35"/>
+<!-- neck+head -->
+<rect x="218" y="82" width="22" height="12" rx="6" class="sk"/>
+<circle cx="238" cy="63" r="21" class="sk"/>
+<ellipse cx="238" cy="46" rx="19" ry="8" fill="#2c2c2a"/>
+<!-- LEFT arm raises laterally from hang -->
+<g class="rf-la">
+  <rect x="102" y="118" width="16" height="40" rx="8" class="sk"/>
+  <ellipse cx="110" cy="160" rx="9" ry="7" class="sk"/>
+  <g transform="translate(110,166)">${db(0,0,30,11)}</g>
 </g>
 <!-- RIGHT arm -->
-<g class="rf-ar">
-  <line x1="168" y1="112" x2="168" y2="148" class="rf-b" stroke-width="5"/>
-  <rect x="155" y="145" width="26" height="8" rx="3" class="rf-db"/>
-  <rect x="151" y="142" width="8" height="14" rx="2" class="rf-db"/>
-  <rect x="175" y="142" width="8" height="14" rx="2" class="rf-db"/>
+<g class="rf-ra">
+  <rect x="222" y="118" width="16" height="40" rx="8" class="sk"/>
+  <ellipse cx="230" cy="160" rx="9" ry="7" class="sk"/>
+  <g transform="translate(230,166)">${db(0,0,30,11)}</g>
 </g>
-<text x="160" y="200" text-anchor="middle" class="rf-lbl">Reverse Fly — Pinch shoulder blades at top</text>
+<text x="170" y="215" text-anchor="middle" class="lbl">Reverse Fly · Pinch shoulder blades at top</text>
 </svg>`,
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // LEGS
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
-"goblet-squat": `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .gs-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .gs-db{fill:#e24b4a;stroke:#a32d2d;stroke-width:1;}
-  /* whole body squats: torso, arms, legs all move together */
-  .gs-fig{transform-origin:150px 140px;animation:gs-sq 2.2s ease-in-out infinite alternate;}
-  @keyframes gs-sq{
-    0%{transform:none;}                          /* standing tall */
-    100%{transform:translateY(32px) scaleY(0.72);} /* deep squat */
+"goblet-squat": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .gs-fig{transform-origin:170px 148px;animation:gs 2.4s ease-in-out infinite alternate;}
+  @keyframes gs{
+    0%{transform:none;}
+    100%{transform:translateY(30px) scaleY(0.72);}
   }
-  .gs-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="50" y1="200" x2="270" y2="200" stroke="#e8e4dc" stroke-width="3"/>
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
 <g class="gs-fig">
   <!-- head -->
-  <circle cx="150" cy="65" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
+  <circle cx="170" cy="52" r="22" class="sk"/>
+  <ellipse cx="170" cy="34" rx="20" ry="9" fill="#2c2c2a"/>
+  <circle cx="163" cy="54" r="2.5" fill="#8B5E3C"/>
+  <circle cx="177" cy="54" r="2.5" fill="#8B5E3C"/>
+  <!-- neck -->
+  <rect x="158" y="68" width="24" height="14" rx="7" class="sk"/>
   <!-- torso -->
-  <line x1="150" y1="82" x2="150" y2="130" class="gs-b" stroke-width="7"/>
-  <!-- arms holding dumbbell at chest -->
-  <line x1="138" y1="100" x2="120" y2="112" class="gs-b" stroke-width="5"/>
-  <line x1="162" y1="100" x2="180" y2="112" class="gs-b" stroke-width="5"/>
-  <!-- goblet dumbbell at chest -->
-  <rect x="132" y="108" width="36" height="12" rx="4" class="gs-db"/>
-  <rect x="126" y="104" width="10" height="20" rx="3" class="gs-db"/>
-  <rect x="164" y="104" width="10" height="20" rx="3" class="gs-db"/>
-  <!-- legs -->
-  <line x1="145" y1="130" x2="118" y2="168" class="gs-b" stroke-width="6"/>
-  <line x1="118" y1="168" x2="100" y2="200" class="gs-b" stroke-width="5"/>
-  <line x1="155" y1="130" x2="182" y2="168" class="gs-b" stroke-width="6"/>
-  <line x1="182" y1="168" x2="200" y2="200" class="gs-b" stroke-width="5"/>
+  <rect x="130" y="78" width="80" height="64" rx="16" class="shirt"/>
+  <!-- shoulder caps -->
+  <ellipse cx="130" cy="86" rx="15" ry="14" class="shirt"/>
+  <ellipse cx="210" cy="86" rx="15" ry="14" class="shirt"/>
+  <!-- arms holding goblet db at chest -->
+  <!-- left arm bent inward -->
+  <rect x="104" y="84" width="30" height="15" rx="7" class="sk" transform="rotate(30,119,91)"/>
+  <rect x="116" y="96" width="28" height="13" rx="6" class="sk" transform="rotate(-20,130,102)"/>
+  <!-- right arm -->
+  <rect x="206" y="84" width="30" height="15" rx="7" class="sk" transform="rotate(-30,221,91)"/>
+  <rect x="196" y="96" width="28" height="13" rx="6" class="sk" transform="rotate(20,210,102)"/>
+  <!-- goblet dumbbell at chest center -->
+  <rect x="148" y="96" width="44" height="16" rx="6" class="db-bar"/>
+  <rect x="140" y="90" width="12" height="28" rx="4" class="db-plate"/>
+  <rect x="188" y="90" width="12" height="28" rx="4" class="db-plate"/>
+  <rect x="136" y="93" width="10" height="22" rx="3" class="db-plate2"/>
+  <rect x="194" y="93" width="10" height="22" rx="3" class="db-plate2"/>
+  <!-- shorts -->
+  <rect x="132" y="130" width="76" height="28" rx="12" class="shorts"/>
+  <!-- quads highlight -->
+  <ellipse cx="148" cy="148" rx="16" ry="22" class="muscle"/>
+  <ellipse cx="192" cy="148" rx="16" ry="22" class="muscle"/>
+  <!-- upper legs -->
+  <rect x="130" y="150" width="34" height="58" rx="14" class="shorts" transform="rotate(-10,147,179)"/>
+  <rect x="176" y="150" width="34" height="58" rx="14" class="shorts" transform="rotate(10,193,179)"/>
+  <!-- knees -->
+  <ellipse cx="143" cy="192" rx="15" ry="12" class="sk"/>
+  <ellipse cx="197" cy="192" rx="15" ry="12" class="sk"/>
+  <!-- lower legs -->
+  <rect x="132" y="188" width="24" height="36" rx="10" class="sk" transform="rotate(-5,144,206)"/>
+  <rect x="184" y="188" width="24" height="36" rx="10" class="sk" transform="rotate(5,196,206)"/>
+  <!-- shoes -->
+  <ellipse cx="136" cy="202" rx="20" ry="9" class="shoe"/>
+  <ellipse cx="204" cy="202" rx="20" ry="9" class="shoe"/>
 </g>
-<text x="160" y="215" text-anchor="middle" class="gs-lbl">Goblet Squat — Chest up, elbows inside knees</text>
+<text x="170" y="218" text-anchor="middle" class="lbl">Goblet Squat · Chest tall, elbows inside knees</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"romanian-deadlift": `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .rd-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .rd-db{fill:#ef9f27;stroke:#ba7517;stroke-width:1;}
-  /* hinge at hips: upper body rotates forward, arms + db slide down legs */
-  .rd-upper{transform-origin:150px 135px;animation:rd-h 2.2s ease-in-out infinite alternate;}
-  @keyframes rd-h{
-    0%{transform:rotate(0deg);}   /* standing */
-    100%{transform:rotate(52deg);} /* hinged forward */
-  }
-  .rd-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="50" y1="198" x2="270" y2="198" stroke="#e8e4dc" stroke-width="3"/>
-<!-- legs stay mostly straight -->
-<line x1="145" y1="135" x2="130" y2="195" class="rd-b" stroke-width="6"/>
-<line x1="130" y1="195" x2="110" y2="198" class="rd-b" stroke-width="5"/>
-<line x1="155" y1="135" x2="170" y2="195" class="rd-b" stroke-width="6"/>
-<line x1="170" y1="195" x2="190" y2="198" class="rd-b" stroke-width="5"/>
-<!-- upper body hinges from hip -->
-<g class="rd-upper">
+// ──────────────────────────────────────────────────────────────────────────
+"romanian-deadlift": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .rdl-upper{transform-origin:170px 148px;animation:rdl 2.4s ease-in-out infinite alternate;}
+  @keyframes rdl{0%{transform:rotate(0deg);}100%{transform:rotate(52deg);}}
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
+<!-- legs stay straight-ish -->
+<!-- upper legs -->
+<rect x="136" y="148" width="32" height="60" rx="14" class="shorts" transform="rotate(-4,152,178)"/>
+<rect x="172" y="148" width="32" height="60" rx="14" class="shorts" transform="rotate(4,188,178)"/>
+<!-- knees -->
+<ellipse cx="150" cy="196" rx="14" ry="11" class="sk"/>
+<ellipse cx="190" cy="196" rx="14" ry="11" class="sk"/>
+<!-- lower legs -->
+<rect x="141" y="192" width="22" height="36" rx="9" class="sk" transform="rotate(-3,152,210)"/>
+<rect x="177" y="192" width="22" height="36" rx="9" class="sk" transform="rotate(3,188,210)"/>
+<!-- shoes -->
+<ellipse cx="144" cy="202" rx="20" ry="8" class="shoe"/>
+<ellipse cx="196" cy="202" rx="20" ry="8" class="shoe"/>
+<!-- hip/shorts -->
+<rect x="134" y="136" width="72" height="26" rx="12" class="shorts"/>
+<!-- hamstring highlight -->
+<ellipse cx="152" cy="165" rx="14" ry="20" fill="#c87840" opacity=".4"/>
+<ellipse cx="188" cy="165" rx="14" ry="20" fill="#c87840" opacity=".4"/>
+<!-- hinged upper body -->
+<g class="rdl-upper">
   <!-- torso -->
-  <line x1="150" y1="135" x2="150" y2="82" class="rd-b" stroke-width="7"/>
-  <!-- head -->
-  <circle cx="150" cy="66" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-  <!-- arms hanging -->
-  <line x1="138" y1="102" x2="132" y2="135" class="rd-b" stroke-width="5"/>
-  <line x1="162" y1="102" x2="168" y2="135" class="rd-b" stroke-width="5"/>
-  <!-- dumbbells -->
-  <rect x="118" y="132" width="28" height="9" rx="3" class="rd-db"/>
-  <rect x="114" y="129" width="9" height="15" rx="2" class="rd-db"/>
-  <rect x="140" y="129" width="9" height="15" rx="2" class="rd-db"/>
-  <rect x="154" y="132" width="28" height="9" rx="3" class="rd-db"/>
-  <rect x="150" y="129" width="9" height="15" rx="2" class="rd-db"/>
-  <rect x="176" y="129" width="9" height="15" rx="2" class="rd-db"/>
+  <rect x="128" y="92" width="84" height="58" rx="16" class="shirt" />
+  <ellipse cx="130" cy="100" rx="14" ry="13" class="shirt"/>
+  <ellipse cx="210" cy="100" rx="14" ry="13" class="shirt"/>
+  <!-- back highlight -->
+  <ellipse cx="170" cy="108" rx="32" ry="11" class="muscle"/>
+  <!-- neck+head -->
+  <rect x="158" y="80" width="24" height="14" rx="7" class="sk"/>
+  <circle cx="170" cy="62" r="21" class="sk"/>
+  <ellipse cx="170" cy="45" rx="19" ry="8" fill="#2c2c2a"/>
+  <!-- arms hanging with dumbbells -->
+  <!-- left arm -->
+  <rect x="114" y="106" width="18" height="44" rx="9" class="sk"/>
+  <ellipse cx="123" cy="152" rx="9" ry="7" class="sk"/>
+  <g transform="translate(123,158)">${db(0,0,32,12)}</g>
+  <!-- right arm -->
+  <rect x="208" y="106" width="18" height="44" rx="9" class="sk"/>
+  <ellipse cx="217" cy="152" rx="9" ry="7" class="sk"/>
+  <g transform="translate(217,158)">${db(0,0,32,12)}</g>
 </g>
-<text x="160" y="213" text-anchor="middle" class="rd-lbl">Romanian Deadlift — Hinge hips, feel stretch</text>
+<text x="170" y="216" text-anchor="middle" class="lbl">Romanian Deadlift · Hinge at hips, feel hamstring stretch</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"reverse-lunge": `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .rl-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .rl-db{fill:#378add;stroke:#185fa5;stroke-width:1;}
-  /* back leg steps back and lowers, front leg bends */
-  .rl-back{transform-origin:150px 140px;animation:rl-step 2.2s ease-in-out infinite alternate;}
-  @keyframes rl-step{
-    0%{transform:none;}
-    100%{transform:translate(-18px, 25px) rotate(15deg);}
-  }
-  .rl-front{transform-origin:150px 140px;animation:rl-front 2.2s ease-in-out infinite alternate;}
-  @keyframes rl-front{
-    0%{transform:none;}
-    100%{transform:translate(10px, 12px);}
-  }
-  .rl-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="30" y1="200" x2="290" y2="200" stroke="#e8e4dc" stroke-width="3"/>
-<!-- torso -->
-<line x1="150" y1="102" x2="150" y2="142" class="rl-b" stroke-width="7"/>
-<!-- head -->
-<circle cx="150" cy="86" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- arms with dumbbells at sides -->
-<line x1="138" y1="108" x2="122" y2="138" class="rl-b" stroke-width="5"/>
-<rect x="108" y="134" width="20" height="7" rx="3" class="rl-db"/>
-<rect x="105" y="131" width="7" height="12" rx="2" class="rl-db"/>
-<rect x="123" y="131" width="7" height="12" rx="2" class="rl-db"/>
-<line x1="162" y1="108" x2="178" y2="138" class="rl-b" stroke-width="5"/>
-<rect x="172" y="134" width="20" height="7" rx="3" class="rl-db"/>
-<rect x="169" y="131" width="7" height="12" rx="2" class="rl-db"/>
-<rect x="187" y="131" width="7" height="12" rx="2" class="rl-db"/>
-<!-- front leg -->
-<g class="rl-front">
-  <line x1="150" y1="142" x2="158" y2="172" class="rl-b" stroke-width="6"/>
-  <line x1="158" y1="172" x2="172" y2="200" class="rl-b" stroke-width="5"/>
-</g>
-<!-- back leg steps back -->
-<g class="rl-back">
-  <line x1="150" y1="142" x2="138" y2="172" class="rl-b" stroke-width="6"/>
-  <line x1="138" y1="172" x2="118" y2="198" class="rl-b" stroke-width="5"/>
-</g>
-<text x="160" y="215" text-anchor="middle" class="rl-lbl">Reverse Lunge — Step back, front knee 90°</text>
-</svg>`,
-
-// ──────────────────────────────────────────────────────────
-"sumo-squat": `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .ss-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .ss-db{fill:#1d9e75;stroke:#0f6e56;stroke-width:1;}
-  /* wide stance squat, whole figure descends */
-  .ss-fig{transform-origin:150px 135px;animation:ss-sq 2.2s ease-in-out infinite alternate;}
-  @keyframes ss-sq{
-    0%{transform:none;}
-    100%{transform:translateY(30px) scaleY(0.75);}
-  }
-  .ss-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="30" y1="200" x2="290" y2="200" stroke="#e8e4dc" stroke-width="3"/>
-<g class="ss-fig">
-  <circle cx="150" cy="65" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-  <line x1="150" y1="82" x2="150" y2="128" class="ss-b" stroke-width="7"/>
-  <!-- arms hang center holding dumbbell -->
-  <line x1="140" y1="100" x2="130" y2="118" class="ss-b" stroke-width="5"/>
-  <line x1="160" y1="100" x2="170" y2="118" class="ss-b" stroke-width="5"/>
-  <!-- dumbbell between legs -->
-  <rect x="134" y="115" width="32" height="11" rx="4" class="ss-db"/>
-  <rect x="127" y="111" width="10" height="18" rx="3" class="ss-db"/>
-  <rect x="163" y="111" width="10" height="18" rx="3" class="ss-db"/>
-  <!-- wide-stance legs, toes pointed out -->
-  <line x1="143" y1="128" x2="105" y2="162" class="ss-b" stroke-width="6"/>
-  <line x1="105" y1="162" x2="78" y2="200" class="ss-b" stroke-width="5"/>
-  <line x1="157" y1="128" x2="195" y2="162" class="ss-b" stroke-width="6"/>
-  <line x1="195" y1="162" x2="222" y2="200" class="ss-b" stroke-width="5"/>
-</g>
-<text x="160" y="215" text-anchor="middle" class="ss-lbl">Sumo Squat — Wide stance, toes out 45°</text>
-</svg>`,
-
-// ──────────────────────────────────────────────────────────
-"step-up": `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .su-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .su-db{fill:#ef9f27;stroke:#ba7517;stroke-width:1;}
-  /* lead leg steps up onto box, drive knee up */
-  .su-knee{transform-origin:160px 155px;animation:su-drive 2s ease-in-out infinite alternate;}
-  @keyframes su-drive{
-    0%{transform:none;}
-    100%{transform:translateY(-38px);}
-  }
-  .su-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<!-- box/step -->
-<rect x="155" y="158" width="130" height="42" rx="4" fill="#d3d1c7" stroke="#b4b2a9" stroke-width="1.5"/>
-<line x1="30" y1="200" x2="290" y2="200" stroke="#e8e4dc" stroke-width="3"/>
+// ──────────────────────────────────────────────────────────────────────────
+"reverse-lunge": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .rl-bleg{transform-origin:158px 160px;animation:rl-b 2.4s ease-in-out infinite alternate;}
+  .rl-fleg{transform-origin:170px 160px;animation:rl-f 2.4s ease-in-out infinite alternate;}
+  @keyframes rl-b{0%{transform:none;}100%{transform:translate(-24px,22px) rotate(18deg);}}
+  @keyframes rl-f{0%{transform:none;}100%{transform:translate(8px,14px) rotate(-10deg);}}
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
 <!-- torso upright -->
-<line x1="150" y1="100" x2="150" y2="155" class="su-b" stroke-width="7"/>
-<!-- head -->
-<circle cx="150" cy="83" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
+<rect x="132" y="96" width="76" height="66" rx="14" class="shirt"/>
+<ellipse cx="132" cy="106" rx="14" ry="13" class="shirt"/>
+<ellipse cx="208" cy="106" rx="14" ry="13" class="shirt"/>
+<!-- shorts -->
+<rect x="130" y="150" width="80" height="24" rx="11" class="shorts"/>
+<!-- neck+head -->
+<rect x="158" y="84" width="24" height="16" rx="8" class="sk"/>
+<circle cx="170" cy="64" r="22" class="sk"/>
+<ellipse cx="170" cy="46" rx="20" ry="9" fill="#2c2c2a"/>
+<circle cx="163" cy="66" r="2.5" fill="#8B5E3C"/>
+<circle cx="177" cy="66" r="2.5" fill="#8B5E3C"/>
+<!-- arms with dumbbells at sides -->
+<rect x="104" y="106" width="30" height="54" rx="12" class="sk"/>
+<ellipse cx="119" cy="162" rx="10" ry="8" class="sk"/>
+<g transform="translate(119,168)">${db(0,0,26,10)}</g>
+<rect x="206" y="106" width="30" height="54" rx="12" class="sk"/>
+<ellipse cx="221" cy="162" rx="10" ry="8" class="sk"/>
+<g transform="translate(221,168)">${db(0,0,26,10)}</g>
+<!-- quad highlight on front leg -->
+<ellipse cx="155" cy="165" rx="14" ry="20" class="muscle"/>
+<!-- FRONT leg bends -->
+<g class="rl-fleg">
+  <rect x="148" y="160" width="28" height="50" rx="12" class="shorts"/>
+  <ellipse cx="162" cy="196" rx="13" ry="10" class="sk"/>
+  <rect x="151" y="192" width="22" height="30" rx="9" class="sk"/>
+  <ellipse cx="158" cy="202" rx="19" ry="8" class="shoe"/>
+</g>
+<!-- BACK leg steps back and lowers -->
+<g class="rl-bleg">
+  <rect x="164" y="160" width="28" height="50" rx="12" class="shorts"/>
+  <ellipse cx="178" cy="196" rx="13" ry="10" class="sk"/>
+  <rect x="167" y="192" width="22" height="30" rx="9" class="sk"/>
+  <ellipse cx="174" cy="202" rx="18" ry="8" class="shoe"/>
+</g>
+<text x="170" y="216" text-anchor="middle" class="lbl">Reverse Lunge · Step back, front knee 90°</text>
+</svg>`,
+
+// ──────────────────────────────────────────────────────────────────────────
+"sumo-squat": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .ss-fig{transform-origin:170px 150px;animation:ss 2.4s ease-in-out infinite alternate;}
+  @keyframes ss{0%{transform:none;}100%{transform:translateY(28px) scaleY(0.74);}}
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
+<g class="ss-fig">
+  <circle cx="170" cy="48" r="22" class="sk"/>
+  <ellipse cx="170" cy="30" rx="20" ry="9" fill="#2c2c2a"/>
+  <rect x="158" y="64" width="24" height="14" rx="7" class="sk"/>
+  <!-- torso -->
+  <rect x="128" y="74" width="84" height="62" rx="16" class="shirt"/>
+  <ellipse cx="130" cy="84" rx="15" ry="14" class="shirt"/>
+  <ellipse cx="210" cy="84" rx="15" ry="14" class="shirt"/>
+  <!-- arms center holding dumbbell down -->
+  <rect x="108" y="86" width="26" height="48" rx="11" class="sk" transform="rotate(18,121,110)"/>
+  <rect x="206" y="86" width="26" height="48" rx="11" class="sk" transform="rotate(-18,219,110)"/>
+  <!-- center goblet style dumbbell low -->
+  <rect x="150" y="128" width="40" height="14" rx="5" class="db-bar"/>
+  <rect x="142" y="122" width="12" height="26" rx="4" class="db-plate"/>
+  <rect x="186" y="122" width="12" height="26" rx="4" class="db-plate"/>
+  <rect x="138" y="125" width="10" height="20" rx="3" class="db-plate2"/>
+  <rect x="192" y="125" width="10" height="20" rx="3" class="db-plate2"/>
+  <!-- shorts -->
+  <rect x="130" y="126" width="80" height="28" rx="12" class="shorts"/>
+  <!-- inner thigh highlight -->
+  <ellipse cx="150" cy="152" rx="14" ry="18" fill="#c87840" opacity=".4"/>
+  <ellipse cx="190" cy="152" rx="14" ry="18" fill="#c87840" opacity=".4"/>
+  <!-- wide-stance upper legs angled out -->
+  <rect x="92" y="148" width="34" height="58" rx="14" class="shorts" transform="rotate(-22,109,177)"/>
+  <rect x="214" y="148" width="34" height="58" rx="14" class="shorts" transform="rotate(22,231,177)"/>
+  <!-- knees wide -->
+  <ellipse cx="102" cy="190" rx="15" ry="12" class="sk"/>
+  <ellipse cx="238" cy="190" rx="15" ry="12" class="sk"/>
+  <!-- lower legs -->
+  <rect x="86" y="185" width="24" height="36" rx="10" class="sk" transform="rotate(-8,98,203)"/>
+  <rect x="230" y="185" width="24" height="36" rx="10" class="sk" transform="rotate(8,242,203)"/>
+  <!-- shoes wide -->
+  <ellipse cx="84" cy="202" rx="20" ry="9" class="shoe"/>
+  <ellipse cx="256" cy="202" rx="20" ry="9" class="shoe"/>
+</g>
+<text x="170" y="218" text-anchor="middle" class="lbl">Sumo Squat · Wide stance, toes 45° out</text>
+</svg>`,
+
+// ──────────────────────────────────────────────────────────────────────────
+"step-up": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .su-dleg{transform-origin:150px 162px;animation:su-d 2.2s ease-in-out infinite alternate;}
+  @keyframes su-d{0%{transform:none;}100%{transform:translateY(-42px) rotate(-20deg);}}
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
+<!-- step/box -->
+<rect x="172" y="158" width="120" height="44" rx="6" fill="#d3d1c7" stroke="#b4b2a9" stroke-width="1.5"/>
+<rect x="172" y="155" width="120" height="10" rx="4" fill="#c0bdb6"/>
+<!-- torso -->
+<rect x="130" y="90" width="80" height="68" rx="16" class="shirt"/>
+<ellipse cx="130" cy="100" rx="15" ry="14" class="shirt"/>
+<ellipse cx="210" cy="100" rx="15" ry="14" class="shirt"/>
+<rect x="128" y="148" width="84" height="26" rx="12" class="shorts"/>
 <!-- arms with dumbbells -->
-<line x1="138" y1="108" x2="118" y2="138" class="su-b" stroke-width="5"/>
-<rect x="104" y="134" width="20" height="7" rx="3" class="su-db"/>
-<rect x="101" y="131" width="7" height="12" rx="2" class="su-db"/>
-<rect x="119" y="131" width="7" height="12" rx="2" class="su-db"/>
-<line x1="162" y1="108" x2="182" y2="138" class="su-b" stroke-width="5"/>
-<rect x="176" y="134" width="20" height="7" rx="3" class="su-db"/>
-<rect x="173" y="131" width="7" height="12" rx="2" class="su-db"/>
-<rect x="191" y="131" width="7" height="12" rx="2" class="su-db"/>
-<!-- support leg (right, on box) -->
-<line x1="155" y1="155" x2="182" y2="160" class="su-b" stroke-width="6"/>
-<line x1="182" y1="160" x2="188" y2="200" class="su-b" stroke-width="5"/>
-<!-- drive leg (left, knee drives up) -->
-<g class="su-knee">
-  <line x1="145" y1="155" x2="130" y2="182" class="su-b" stroke-width="6"/>
-  <line x1="130" y1="182" x2="118" y2="200" class="su-b" stroke-width="5"/>
+<rect x="100" y="102" width="30" height="56" rx="13" class="sk"/>
+<ellipse cx="115" cy="160" rx="10" ry="8" class="sk"/>
+<g transform="translate(115,166)">${db(0,0,26,10)}</g>
+<rect x="210" y="102" width="30" height="56" rx="13" class="sk"/>
+<ellipse cx="225" cy="160" rx="10" ry="8" class="sk"/>
+<g transform="translate(225,166)">${db(0,0,26,10)}</g>
+<!-- neck+head -->
+<rect x="158" y="78" width="24" height="16" rx="8" class="sk"/>
+<circle cx="170" cy="58" r="22" class="sk"/>
+<ellipse cx="170" cy="40" rx="20" ry="9" fill="#2c2c2a"/>
+<circle cx="163" cy="60" r="2.5" fill="#8B5E3C"/>
+<circle cx="177" cy="60" r="2.5" fill="#8B5E3C"/>
+<!-- lead leg on box (planted) -->
+<rect x="172" y="158" width="32" height="18" rx="9" class="shorts"/>
+<ellipse cx="188" cy="168" rx="15" ry="10" class="sk"/>
+<rect x="178" y="162" width="22" height="38" rx="9" class="sk"/>
+<ellipse cx="188" cy="160" rx="20" ry="8" class="shoe"/>
+<!-- glute highlight on planted leg -->
+<ellipse cx="188" cy="156" rx="16" ry="12" fill="#c87840" opacity=".4"/>
+<!-- DRIVE knee animates upward -->
+<g class="su-dleg">
+  <rect x="134" y="162" width="32" height="50" rx="13" class="shorts"/>
+  <ellipse cx="150" cy="198" rx="14" ry="11" class="sk"/>
+  <rect x="139" y="193" width="22" height="32" rx="9" class="sk"/>
+  <ellipse cx="145" cy="202" rx="18" ry="8" class="shoe"/>
 </g>
-<text x="160" y="215" text-anchor="middle" class="su-lbl">Step-Up — Drive knee up, step down controlled</text>
+<text x="170" y="216" text-anchor="middle" class="lbl">Step-Up · Drive knee high, step down controlled</text>
 </svg>`,
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 // CORE & CONDITIONING
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 
-"renegade-row": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .rr-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .rr-db{fill:#e24b4a;stroke:#a32d2d;stroke-width:1;}
-  /* plank position, one arm rows up, alternating */
-  .rr-arm{transform-origin:200px 108px;animation:rr-row 2.2s ease-in-out infinite alternate;}
-  @keyframes rr-row{
-    0%{transform:rotate(0deg);}
-    100%{transform:rotate(-75deg);}
-  }
-  .rr-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="20" y1="168" x2="300" y2="168" stroke="#e8e4dc" stroke-width="3"/>
-<!-- plank body: head on right, feet left, body diagonal/horizontal -->
-<!-- torso rigid -->
-<line x1="70" y1="148" x2="240" y2="105" class="rr-b" stroke-width="8"/>
-<!-- head -->
-<circle cx="254" cy="97" r="16" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- feet/toes on floor -->
-<line x1="70" y1="148" x2="50" y2="165" class="rr-b" stroke-width="5"/>
-<line x1="75" y1="148" x2="58" y2="165" class="rr-b" stroke-width="5"/>
-<!-- support left arm (straight, planted) -->
-<line x1="155" y1="122" x2="148" y2="148" class="rr-b" stroke-width="5"/>
-<rect x="136" y="144" width="22" height="8" rx="3" class="rr-db"/>
-<rect x="132" y="141" width="8" height="14" rx="2" class="rr-db"/>
-<rect x="152" y="141" width="8" height="14" rx="2" class="rr-db"/>
-<!-- working right arm — rows up -->
-<g class="rr-arm">
-  <line x1="200" y1="108" x2="204" y2="138" class="rr-b" stroke-width="5"/>
-  <rect x="192" y="134" width="22" height="8" rx="3" class="rr-db"/>
-  <rect x="188" y="131" width="8" height="14" rx="2" class="rr-db"/>
-  <rect x="208" y="131" width="8" height="14" rx="2" class="rr-db"/>
+"renegade-row": `<svg viewBox="0 0 340 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:190px;display:block;">
+<style>${CSS}
+  .rr-wa{transform-origin:224px 114px;animation:rr 2.4s ease-in-out infinite alternate;}
+  @keyframes rr{0%{transform:rotate(0deg);}100%{transform:rotate(-82deg);}}
+</style>
+<line x1="20" y1="178" x2="320" y2="178" stroke="#e8e4dc" stroke-width="3"/>
+<!-- === PLANK FIGURE: head right, feet left === -->
+<!-- Feet/toes -->
+<ellipse cx="42" cy="170" rx="10" ry="7" class="shoe"/>
+<ellipse cx="54" cy="168" rx="10" ry="7" class="shoe"/>
+<!-- lower legs -->
+<rect x="36" y="148" width="18" height="26" rx="7" class="sk" transform="rotate(12,45,161)"/>
+<rect x="48" y="146" width="18" height="26" rx="7" class="sk" transform="rotate(10,57,159)"/>
+<!-- upper legs + shorts -->
+<rect x="44" y="120" width="22" height="38" rx="9" class="shorts" transform="rotate(8,55,139)"/>
+<rect x="60" y="118" width="22" height="38" rx="9" class="shorts" transform="rotate(6,71,137)"/>
+<!-- hips + torso rigid plank -->
+<rect x="70" y="102" width="168" height="36" rx="14" class="shirt"/>
+<!-- shoulder -->
+<ellipse cx="238" cy="114" rx="16" ry="14" class="shirt"/>
+<ellipse cx="72" cy="114" rx="12" ry="11" class="shirt"/>
+<!-- core highlight (showing tension) -->
+<ellipse cx="152" cy="116" rx="40" ry="8" fill="#1a2533" opacity=".2"/>
+<!-- neck+head (to right) -->
+<rect x="248" y="106" width="20" height="12" rx="6" class="sk"/>
+<circle cx="276" cy="104" r="20" class="sk"/>
+<ellipse cx="276" cy="88" rx="18" ry="8" fill="#2c2c2a"/>
+<!-- support arm (LEFT, planted on dumbbell) -->
+<rect x="64" y="112" width="15" height="50" rx="7" class="sk" transform="rotate(16,71,137)"/>
+<!-- support dumbbell planted left -->
+<rect x="46" y="156" width="38" height="9" rx="3" class="db-bar" transform="rotate(0)"/>
+<rect x="38" y="150" width="10" height="21" rx="3" class="db-plate"/>
+<rect x="76" y="150" width="10" height="21" rx="3" class="db-plate"/>
+<!-- working RIGHT arm pulls up from planted dumbbell -->
+<g class="rr-wa">
+  <rect x="216" y="114" width="16" height="46" rx="8" class="sk"/>
+  <ellipse cx="224" cy="162" rx="9" ry="7" class="sk"/>
+  <!-- working dumbbell -->
+  <rect x="206" y="158" width="38" height="9" rx="3" class="db-bar"/>
+  <rect x="198" y="152" width="10" height="21" rx="3" class="db-plate2"/>
+  <rect x="236" y="152" width="10" height="21" rx="3" class="db-plate2"/>
 </g>
-<text x="160" y="188" text-anchor="middle" class="rr-lbl">Renegade Row — No hip rotation!</text>
+<text x="170" y="200" text-anchor="middle" class="lbl">Renegade Row · No hip rotation, keep rigid</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"russian-twist": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .rt-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .rt-db{fill:#ef9f27;stroke:#ba7517;stroke-width:1;}
-  /* seated V-shape, upper body rotates side to side */
-  .rt-upper{transform-origin:150px 120px;animation:rt-twist 1.8s ease-in-out infinite alternate;}
-  @keyframes rt-twist{
-    0%{transform:rotate(-32deg);}
-    100%{transform:rotate(32deg);}
-  }
-  .rt-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="50" y1="185" x2="270" y2="185" stroke="#e8e4dc" stroke-width="3"/>
-<!-- legs in V (fixed, feet raised or heels on floor) -->
-<line x1="150" y1="148" x2="108" y2="185" class="rt-b" stroke-width="6"/>
-<line x1="150" y1="148" x2="192" y2="185" class="rt-b" stroke-width="6"/>
-<!-- rotating upper body pivots at hip -->
+// ──────────────────────────────────────────────────────────────────────────
+"russian-twist": `<svg viewBox="0 0 340 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:190px;display:block;">
+<style>${CSS}
+  .rt-upper{transform-origin:170px 128px;animation:rt 1.9s ease-in-out infinite alternate;}
+  @keyframes rt{0%{transform:rotate(-34deg);}100%{transform:rotate(34deg);}}
+</style>
+<line x1="40" y1="188" x2="300" y2="188" stroke="#e8e4dc" stroke-width="3"/>
+<!-- Legs in V shape (fixed) -->
+<!-- left leg -->
+<rect x="102" y="152" width="32" height="56" rx="13" class="shorts" transform="rotate(-28,118,180)"/>
+<ellipse cx="90" cy="186" rx="14" ry="8" class="sk"/>
+<ellipse cx="80" cy="186" rx="18" ry="8" class="shoe"/>
+<!-- right leg -->
+<rect x="206" y="152" width="32" height="56" rx="13" class="shorts" transform="rotate(28,222,180)"/>
+<ellipse cx="250" cy="186" rx="14" ry="8" class="sk"/>
+<ellipse cx="260" cy="186" rx="18" ry="8" class="shoe"/>
+<!-- oblique highlights (fixed) -->
+<ellipse cx="148" cy="144" rx="16" ry="10" fill="#c87840" opacity=".4"/>
+<ellipse cx="192" cy="144" rx="16" ry="10" fill="#c87840" opacity=".4"/>
+<!-- rotating upper body -->
 <g class="rt-upper">
-  <!-- torso up from hip at ~45° -->
-  <line x1="150" y1="120" x2="150" y2="82" class="rt-b" stroke-width="7"/>
-  <!-- head -->
-  <circle cx="150" cy="66" r="16" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-  <!-- arms extended forward holding dumbbell -->
-  <line x1="140" y1="96" x2="112" y2="108" class="rt-b" stroke-width="5"/>
-  <line x1="160" y1="96" x2="188" y2="108" class="rt-b" stroke-width="5"/>
-  <rect x="174" y="102" width="22" height="8" rx="3" class="rt-db"/>
-  <rect x="170" y="99" width="8" height="14" rx="2" class="rt-db"/>
-  <rect x="190" y="99" width="8" height="14" rx="2" class="rt-db"/>
+  <!-- torso at ~45° from hip -->
+  <rect x="134" y="90" width="72" height="56" rx="14" class="shirt"/>
+  <ellipse cx="134" cy="100" rx="13" ry="12" class="shirt"/>
+  <ellipse cx="206" cy="100" rx="13" ry="12" class="shirt"/>
+  <!-- abs line detail -->
+  <ellipse cx="170" cy="116" rx="20" ry="8" class="muscle"/>
+  <!-- neck+head -->
+  <rect x="158" y="78" width="24" height="14" rx="7" class="sk"/>
+  <circle cx="170" cy="60" r="21" class="sk"/>
+  <ellipse cx="170" cy="43" rx="19" ry="8" fill="#2c2c2a"/>
+  <!-- both arms extended with dumbbell -->
+  <rect x="108" y="96" width="32" height="14" rx="7" class="sk"/>
+  <rect x="200" y="96" width="32" height="14" rx="7" class="sk"/>
+  <ellipse cx="106" cy="103" rx="9" ry="7" class="sk"/>
+  <ellipse cx="234" cy="103" rx="9" ry="7" class="sk"/>
+  <!-- dumbbell at end of both arms -->
+  <g transform="translate(96,103)">${db(0,0,28,11)}</g>
 </g>
-<text x="160" y="200" text-anchor="middle" class="rt-lbl">Russian Twist — Rotate from core, not arms</text>
+<text x="170" y="204" text-anchor="middle" class="lbl">Russian Twist · Rotate from core, control movement</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"suitcase-carry": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .sc-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .sc-db{fill:#378add;stroke:#185fa5;stroke-width:1;}
-  /* figure walks: legs alternate, body stays upright resisting lateral tilt */
-  .sc-ll{transform-origin:143px 152px;animation:sc-walk-l 0.8s ease-in-out infinite alternate;}
-  .sc-rl{transform-origin:157px 152px;animation:sc-walk-r 0.8s ease-in-out infinite alternate;}
-  @keyframes sc-walk-l{0%{transform:rotate(-18deg);}100%{transform:rotate(18deg);}}
-  @keyframes sc-walk-r{0%{transform:rotate(18deg);}100%{transform:rotate(-18deg);}}
-  /* small body sway to show anti-lean effort */
-  .sc-body{animation:sc-sway 1.6s ease-in-out infinite alternate;}
-  @keyframes sc-sway{0%{transform:translateX(-2px);}100%{transform:translateX(2px);}}
-  .sc-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="30" y1="190" x2="290" y2="190" stroke="#e8e4dc" stroke-width="3"/>
-<g class="sc-body">
-  <!-- torso upright -->
-  <line x1="150" y1="100" x2="150" y2="152" class="sc-b" stroke-width="7"/>
-  <!-- head -->
-  <circle cx="150" cy="83" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-  <!-- free arm (left) relaxed at side -->
-  <line x1="138" y1="108" x2="120" y2="145" class="sc-b" stroke-width="5"/>
-  <!-- working arm (right) holding heavy dumbbell -->
-  <line x1="162" y1="108" x2="182" y2="145" class="sc-b" stroke-width="5"/>
-  <!-- big heavy dumbbell on right -->
-  <rect x="172" y="142" width="30" height="12" rx="4" class="sc-db"/>
-  <rect x="167" y="138" width="10" height="20" rx="3" class="sc-db"/>
-  <rect x="196" y="138" width="10" height="20" rx="3" class="sc-db"/>
+// ──────────────────────────────────────────────────────────────────────────
+"suitcase-carry": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .sc-ll{transform-origin:152px 162px;animation:sc-l 0.75s ease-in-out infinite alternate;}
+  .sc-rl{transform-origin:188px 162px;animation:sc-r 0.75s ease-in-out infinite alternate;}
+  .sc-la{transform-origin:130px 112px;animation:sc-la 0.75s ease-in-out infinite alternate;}
+  @keyframes sc-l{0%{transform:rotate(-20deg);}100%{transform:rotate(20deg);}}
+  @keyframes sc-r{0%{transform:rotate(20deg);}100%{transform:rotate(-20deg);}}
+  @keyframes sc-la{0%{transform:rotate(-6deg);}100%{transform:rotate(6deg);}}
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
+<!-- torso upright - tall posture key -->
+<rect x="130" y="94" width="80" height="70" rx="16" class="shirt"/>
+<ellipse cx="130" cy="104" rx="14" ry="13" class="shirt"/>
+<ellipse cx="210" cy="104" rx="14" ry="13" class="shirt"/>
+<!-- core/oblique highlight (anti-lean tension) -->
+<ellipse cx="130" cy="122" rx="10" ry="18" fill="#c87840" opacity=".45"/>
+<!-- shorts -->
+<rect x="132" y="152" width="76" height="24" rx="11" class="shorts"/>
+<!-- neck+head -->
+<rect x="158" y="82" width="24" height="16" rx="8" class="sk"/>
+<circle cx="170" cy="62" r="22" class="sk"/>
+<ellipse cx="170" cy="44" rx="20" ry="9" fill="#2c2c2a"/>
+<circle cx="163" cy="64" r="2.5" fill="#8B5E3C"/>
+<circle cx="177" cy="64" r="2.5" fill="#8B5E3C"/>
+<!-- free LEFT arm swings naturally -->
+<g class="sc-la">
+  <rect x="100" y="106" width="30" height="52" rx="13" class="sk"/>
+  <ellipse cx="115" cy="160" rx="10" ry="8" class="sk"/>
 </g>
+<!-- RIGHT arm holds HEAVY dumbbell -->
+<rect x="210" y="104" width="30" height="60" rx="13" class="sk"/>
+<ellipse cx="225" cy="166" rx="10" ry="8" class="sk"/>
+<!-- heavy dumbbell (bigger plates) -->
+<rect x="208" y="162" width="46" height="12" rx="4" class="db-bar"/>
+<rect x="198" y="154" width="14" height="28" rx="4" class="db-plate"/>
+<rect x="246" y="154" width="14" height="28" rx="4" class="db-plate"/>
+<rect x="194" y="158" width="10" height="20" rx="3" class="db-plate2"/>
+<rect x="254" y="158" width="10" height="20" rx="3" class="db-plate2"/>
 <!-- walking legs -->
 <g class="sc-ll">
-  <line x1="143" y1="152" x2="128" y2="190" class="sc-b" stroke-width="6"/>
+  <rect x="136" y="162" width="32" height="54" rx="13" class="shorts"/>
+  <ellipse cx="152" cy="202" rx="13" ry="9" class="sk"/>
+  <ellipse cx="146" cy="202" rx="20" ry="9" class="shoe"/>
 </g>
 <g class="sc-rl">
-  <line x1="157" y1="152" x2="172" y2="190" class="sc-b" stroke-width="6"/>
+  <rect x="172" y="162" width="32" height="54" rx="13" class="shorts"/>
+  <ellipse cx="188" cy="202" rx="13" ry="9" class="sk"/>
+  <ellipse cx="194" cy="202" rx="20" ry="9" class="shoe"/>
 </g>
-<text x="160" y="205" text-anchor="middle" class="sc-lbl">Suitcase Carry — Stay tall, resist lateral lean</text>
+<text x="170" y="216" text-anchor="middle" class="lbl">Suitcase Carry · Stay upright, resist lateral lean</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"woodchop": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .wc-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .wc-db{fill:#1d9e75;stroke:#0f6e56;stroke-width:1;}
-  /* whole upper body rotates diagonally, high to low */
-  .wc-upper{transform-origin:150px 130px;animation:wc-chop 2s ease-in-out infinite alternate;}
-  @keyframes wc-chop{
-    0%{transform:rotate(-40deg);}   /* high position */
-    100%{transform:rotate(40deg);}  /* low position */
-  }
-  .wc-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="30" y1="190" x2="290" y2="190" stroke="#e8e4dc" stroke-width="3"/>
-<!-- legs stay relatively fixed, feet pivot -->
-<line x1="143" y1="152" x2="122" y2="188" class="wc-b" stroke-width="6"/>
-<line x1="122" y1="188" x2="100" y2="190" class="wc-b" stroke-width="5"/>
-<line x1="157" y1="152" x2="178" y2="188" class="wc-b" stroke-width="6"/>
-<line x1="178" y1="188" x2="200" y2="190" class="wc-b" stroke-width="5"/>
+// ──────────────────────────────────────────────────────────────────────────
+"woodchop": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .wc-upper{transform-origin:170px 138px;animation:wc 2s ease-in-out infinite alternate;}
+  @keyframes wc{0%{transform:rotate(-38deg);}100%{transform:rotate(38deg);}}
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
+<!-- legs with pivot (feet rotate) -->
+<rect x="132" y="158" width="32" height="50" rx="13" class="shorts" transform="rotate(-12,148,183)"/>
+<ellipse cx="132" cy="198" rx="19" ry="9" class="shoe" transform="rotate(-12)"/>
+<rect x="176" y="158" width="32" height="50" rx="13" class="shorts" transform="rotate(12,192,183)"/>
+<ellipse cx="198" cy="198" rx="19" ry="9" class="shoe" transform="rotate(12)"/>
+<!-- knees -->
+<ellipse cx="142" cy="196" rx="13" ry="10" class="sk"/>
+<ellipse cx="198" cy="196" rx="13" ry="10" class="sk"/>
+<!-- lower legs -->
+<rect x="133" y="192" width="20" height="32" rx="8" class="sk"/>
+<rect x="187" y="192" width="20" height="32" rx="8" class="sk"/>
+<!-- hip -->
+<rect x="132" y="144" width="76" height="26" rx="12" class="shorts"/>
+<!-- oblique + core highlight -->
+<ellipse cx="148" cy="148" rx="14" ry="16" class="muscle"/>
+<ellipse cx="192" cy="148" rx="14" ry="16" class="muscle"/>
 <!-- rotating upper body -->
 <g class="wc-upper">
   <!-- torso -->
-  <line x1="150" y1="130" x2="150" y2="88" class="wc-b" stroke-width="7"/>
-  <!-- head -->
-  <circle cx="150" cy="72" r="16" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-  <!-- both arms extended holding dumbbell — diagonal -->
-  <line x1="142" y1="100" x2="108" y2="85" class="wc-b" stroke-width="5"/>
-  <line x1="158" y1="100" x2="192" y2="115" class="wc-b" stroke-width="5"/>
-  <!-- dumbbell at end of arms -->
-  <rect x="94" y="79" width="22" height="8" rx="3" class="wc-db"/>
-  <rect x="90" y="76" width="8" height="14" rx="2" class="wc-db"/>
-  <rect x="110" y="76" width="8" height="14" rx="2" class="wc-db"/>
+  <rect x="130" y="88" width="80" height="60" rx="16" class="shirt"/>
+  <ellipse cx="130" cy="98" rx="15" ry="14" class="shirt"/>
+  <ellipse cx="210" cy="98" rx="15" ry="14" class="shirt"/>
+  <!-- neck+head -->
+  <rect x="158" y="76" width="24" height="15" rx="7" class="sk"/>
+  <circle cx="170" cy="57" r="21" class="sk"/>
+  <ellipse cx="170" cy="40" rx="19" ry="8" fill="#2c2c2a"/>
+  <!-- both arms extended diagonal to dumbbell -->
+  <rect x="96" y="86" width="34" height="14" rx="7" class="sk" transform="rotate(-15,113,93)"/>
+  <rect x="210" y="98" width="34" height="14" rx="7" class="sk" transform="rotate(-15,227,105)"/>
+  <!-- dumbbell at far end of arc -->
+  <g transform="translate(84,85) rotate(-15)">${db(0,0,30,12)}</g>
 </g>
-<text x="160" y="205" text-anchor="middle" class="wc-lbl">Woodchop — Pivot feet, rotate from core</text>
+<text x="170" y="216" text-anchor="middle" class="lbl">Woodchop · Pivot feet, rotate from core</text>
 </svg>`,
 
-// ──────────────────────────────────────────────────────────
-"farmers-walk": `<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:180px;display:block;">
-<defs><style>
-  .fw-b{fill:none;stroke:#2c3e50;stroke-linecap:round;stroke-linejoin:round;}
-  .fw-db{fill:#378add;stroke:#185fa5;stroke-width:1;}
-  /* brisk walking: legs alternate, arms + dumbbells swing slightly */
-  .fw-ll{transform-origin:143px 152px;animation:fw-l 0.65s ease-in-out infinite alternate;}
-  .fw-rl{transform-origin:157px 152px;animation:fw-r 0.65s ease-in-out infinite alternate;}
-  .fw-la{transform-origin:136px 110px;animation:fw-la 0.65s ease-in-out infinite alternate;}
-  .fw-ra{transform-origin:164px 110px;animation:fw-ra 0.65s ease-in-out infinite alternate;}
+// ──────────────────────────────────────────────────────────────────────────
+"farmers-walk": `<svg viewBox="0 0 340 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:200px;display:block;">
+<style>${CSS}
+  .fw-ll{transform-origin:150px 164px;animation:fw-l 0.65s ease-in-out infinite alternate;}
+  .fw-rl{transform-origin:190px 164px;animation:fw-r 0.65s ease-in-out infinite alternate;}
+  .fw-la{transform-origin:118px 110px;animation:fw-la 0.65s ease-in-out infinite alternate;}
+  .fw-ra{transform-origin:222px 110px;animation:fw-ra 0.65s ease-in-out infinite alternate;}
   @keyframes fw-l{0%{transform:rotate(-22deg);}100%{transform:rotate(22deg);}}
   @keyframes fw-r{0%{transform:rotate(22deg);}100%{transform:rotate(-22deg);}}
   @keyframes fw-la{0%{transform:rotate(-8deg);}100%{transform:rotate(8deg);}}
   @keyframes fw-ra{0%{transform:rotate(8deg);}100%{transform:rotate(-8deg);}}
-  .fw-lbl{font:12px -apple-system,sans-serif;fill:#6b6860;}
-</style></defs>
-<line x1="30" y1="190" x2="290" y2="190" stroke="#e8e4dc" stroke-width="3"/>
-<!-- torso upright -->
-<line x1="150" y1="100" x2="150" y2="152" class="fw-b" stroke-width="7"/>
-<!-- head -->
-<circle cx="150" cy="84" r="17" fill="#faeeda" stroke="#2c3e50" stroke-width="4"/>
-<!-- left arm + big dumbbell -->
+</style>
+<line x1="40" y1="202" x2="300" y2="202" stroke="#e8e4dc" stroke-width="3"/>
+<!-- torso -->
+<rect x="130" y="92" width="80" height="72" rx="16" class="shirt"/>
+<ellipse cx="130" cy="102" rx="15" ry="14" class="shirt"/>
+<ellipse cx="210" cy="102" rx="15" ry="14" class="shirt"/>
+<!-- trapezius highlight (loaded carry) -->
+<ellipse cx="150" cy="98" rx="16" ry="10" fill="#1a2533" opacity=".18"/>
+<ellipse cx="190" cy="98" rx="16" ry="10" fill="#1a2533" opacity=".18"/>
+<!-- shorts -->
+<rect x="132" y="152" width="76" height="26" rx="12" class="shorts"/>
+<!-- neck+head -->
+<rect x="158" y="80" width="24" height="16" rx="8" class="sk"/>
+<circle cx="170" cy="60" r="22" class="sk"/>
+<ellipse cx="170" cy="42" rx="20" ry="9" fill="#2c2c2a"/>
+<circle cx="163" cy="62" r="2.5" fill="#8B5E3C"/>
+<circle cx="177" cy="62" r="2.5" fill="#8B5E3C"/>
+<!-- LEFT arm + heavy dumbbell swings slightly -->
 <g class="fw-la">
-  <line x1="136" y1="110" x2="118" y2="148" class="fw-b" stroke-width="5"/>
-  <rect x="106" y="144" width="24" height="10" rx="3" class="fw-db"/>
-  <rect x="101" y="140" width="9" height="18" rx="2" class="fw-db"/>
-  <rect x="125" y="140" width="9" height="18" rx="2" class="fw-db"/>
+  <rect x="96" y="104" width="26" height="58" rx="12" class="sk"/>
+  <ellipse cx="109" cy="164" rx="10" ry="8" class="sk"/>
+  <!-- big heavy dumbbell -->
+  <rect x="92" y="160" width="42" height="12" rx="4" class="db-bar"/>
+  <rect x="82" y="152" width="13" height="28" rx="4" class="db-plate"/>
+  <rect x="126" y="152" width="13" height="28" rx="4" class="db-plate"/>
+  <rect x="78" y="156" width="10" height="20" rx="3" class="db-plate2"/>
+  <rect x="133" y="156" width="10" height="20" rx="3" class="db-plate2"/>
 </g>
-<!-- right arm + big dumbbell -->
+<!-- RIGHT arm + heavy dumbbell -->
 <g class="fw-ra">
-  <line x1="164" y1="110" x2="182" y2="148" class="fw-b" stroke-width="5"/>
-  <rect x="170" y="144" width="24" height="10" rx="3" class="fw-db"/>
-  <rect x="165" y="140" width="9" height="18" rx="2" class="fw-db"/>
-  <rect x="189" y="140" width="9" height="18" rx="2" class="fw-db"/>
+  <rect x="218" y="104" width="26" height="58" rx="12" class="sk"/>
+  <ellipse cx="231" cy="164" rx="10" ry="8" class="sk"/>
+  <rect x="214" y="160" width="42" height="12" rx="4" class="db-bar"/>
+  <rect x="204" y="152" width="13" height="28" rx="4" class="db-plate"/>
+  <rect x="248" y="152" width="13" height="28" rx="4" class="db-plate"/>
+  <rect x="200" y="156" width="10" height="20" rx="3" class="db-plate2"/>
+  <rect x="255" y="156" width="10" height="20" rx="3" class="db-plate2"/>
 </g>
 <!-- walking legs -->
-<g class="fw-ll"><line x1="143" y1="152" x2="125" y2="190" class="fw-b" stroke-width="6"/></g>
-<g class="fw-rl"><line x1="157" y1="152" x2="175" y2="190" class="fw-b" stroke-width="6"/></g>
-<text x="160" y="205" text-anchor="middle" class="fw-lbl">Farmer's Walk — Tall posture, heavy load</text>
+<g class="fw-ll">
+  <rect x="134" y="164" width="32" height="54" rx="13" class="shorts"/>
+  <ellipse cx="150" cy="204" rx="13" ry="9" class="sk"/>
+  <ellipse cx="144" cy="202" rx="20" ry="9" class="shoe"/>
+</g>
+<g class="fw-rl">
+  <rect x="174" y="164" width="32" height="54" rx="13" class="shorts"/>
+  <ellipse cx="190" cy="204" rx="13" ry="9" class="sk"/>
+  <ellipse cx="196" cy="202" rx="20" ry="9" class="shoe"/>
+</g>
+<text x="170" y="216" text-anchor="middle" class="lbl">Farmer's Walk · Tall posture, heavy load both hands</text>
 </svg>`,
 
 }; // end svgs
 
 return svgs[id] || svgs["goblet-squat"];
 }
+
 
 const EXERCISES={
   A:[
