@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Iron Regiment — 6-Month Dumbbell Program</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0; --card: #ffffff; --surface: #f0ede8;
+    --text: #1a1a18; --text2: #6b6860; --text3: #9b9890;
+    --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+    --red: #c8382d; --red-light: #e8534a; --red-bg: #fce8e8; --red-text: #a32d2d;
+    --green: #639922; --green-bg: #eaf3de; --green-text: #3b6d11;
+    --blue: #185fa5; --blue-bg: #e6f1fb; --blue-text: #185fa5;
+    --amber: #854f0b; --amber-bg: #faeeda; --amber-text: #854f0b;
+    --teal: #1d9e75;
+    --radius: 8px; --radius-lg: 12px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18; --card: #242420; --surface: #2e2e2a;
+      --text: #e8e4dc; --text2: #9b9890; --text3: #6b6860;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+      --red-bg: #3a1210; --red-text: #f09595;
+      --green-bg: #1a2e0a; --green-text: #c0dd97;
+      --blue-bg: #0c2540; --blue-text: #85b7eb;
+      --amber-bg: #2e1c04; --amber-text: #fac775;
+    }
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* LAYOUT */
+  #app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; background: var(--card); box-shadow: var(--shadow); }
+  @media (min-width: 500px) { #app { margin: 1rem auto; min-height: calc(100vh - 2rem); border-radius: var(--radius-lg); overflow: hidden; } }
+
+  /* HEADER */
+  .app-header { background: #2c3e50; color: #e8e0d4; padding: 1.1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; }
+  .header-title { font-size: 17px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; }
+  .header-sub { font-size: 11px; color: #9fb3c8; margin-top: 2px; }
+  .badge-phase { background: var(--red); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: var(--radius); letter-spacing: 0.5px; }
+
+  /* TABS */
+  .nav-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .nav-tab { flex: 1; padding: 11px 4px; font-size: 12px; font-weight: 500; color: var(--text2); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.15s; }
+  .nav-tab.active { color: var(--text); border-bottom-color: var(--red); }
+  .tab-content { display: none; padding: 1rem 1.1rem; flex: 1; overflow-y: auto; }
+  .tab-content.active { display: block; }
+
+  /* STATS */
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 1rem; }
+  .stat-card { background: var(--surface); border-radius: var(--radius); padding: 9px 6px; text-align: center; }
+  .stat-val { font-size: 20px; font-weight: 600; }
+  .stat-label { font-size: 10px; color: var(--text2); margin-top: 1px; }
+
+  /* PHASE GRID */
+  .phase-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-bottom: 1rem; }
+  .phase-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 10px; cursor: pointer; transition: border-color 0.15s; }
+  .phase-card:hover { border-color: var(--border2); }
+  .phase-card.active-phase { border: 2px solid var(--red); }
+  .phase-num { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .phase-name { font-size: 12px; font-weight: 600; color: var(--text); margin-top: 2px; }
+  .phase-weeks { font-size: 11px; color: var(--text2); }
+  .phase-bar { height: 3px; border-radius: 2px; margin-top: 7px; background: var(--border); }
+  .phase-fill { height: 100%; border-radius: 2px; background: var(--red); transition: width 0.4s; }
+
+  /* DAYS */
+  .days-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .day-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 12px; cursor: pointer; transition: border-color 0.15s; }
+  .day-card:hover { border-color: var(--border2); }
+  .day-card.completed { border-color: var(--green); }
+  .day-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .day-label { font-size: 10px; color: var(--text3); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .day-name { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 2px; }
+  .day-focus { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .day-meta { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+  .date-badge { font-size: 10px; color: var(--green); margin-top: 3px; }
+  .check-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .check-done { background: var(--green); color: #fff; }
+  .check-pending { background: var(--border); }
+
+  /* TAGS */
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
+  .tag-red   { background: var(--red-bg);   color: var(--red-text); }
+  .tag-blue  { background: var(--blue-bg);  color: var(--blue-text); }
+  .tag-green { background: var(--green-bg); color: var(--green-text); }
+  .tag-amber { background: var(--amber-bg); color: var(--amber-text); }
+
+  /* WEEK SELECT */
+  .week-selector { margin-bottom: 0.75rem; }
+  .week-selector select { width: 100%; font-size: 13px; padding: 8px 10px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--card); color: var(--text); }
+
+  /* WORKOUT VIEW */
+  .back-btn { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text2); background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 1rem; }
+  .back-btn:hover { color: var(--text); }
+  .workout-title { font-size: 19px; font-weight: 700; color: var(--text); }
+  .workout-subtitle { font-size: 13px; color: var(--text2); margin-top: 3px; margin-bottom: 1rem; }
+  .workout-meta-row { display: flex; gap: 7px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .meta-pill { display: flex; align-items: center; gap: 4px; background: var(--surface); border-radius: 20px; padding: 5px 11px; font-size: 12px; color: var(--text2); }
+  .meta-pill span { color: var(--text); font-weight: 600; }
+
+  /* EXERCISES */
+  .exercise-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.25rem; }
+  .exercise-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.15s; }
+  .exercise-item.checked { border-color: var(--green); }
+  .exercise-header { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
+  .ex-checkbox { width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; transition: all 0.15s; }
+  .ex-checkbox.checked { background: var(--green); border-color: var(--green); color: #fff; }
+  .ex-info { flex: 1; }
+  .ex-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .ex-desc { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .ex-tags { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+  .ex-img-area { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; background: var(--surface); }
+  .ex-img-area.open { max-height: 240px; }
+  .img-inner { padding: 12px; display: flex; gap: 12px; align-items: flex-start; }
+  .ex-svg-wrap { width: 80px; height: 80px; flex-shrink: 0; background: var(--card); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
+  .ex-details { flex: 1; font-size: 12px; color: var(--text2); line-height: 1.65; }
+
+  /* COMPLETE BTN */
+  .complete-btn { width: 100%; padding: 13px; background: var(--red); color: #fff; border: none; border-radius: var(--radius-lg); font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: 0.3px; transition: background 0.15s; margin-bottom: 1rem; }
+  .complete-btn:hover:not(:disabled) { background: var(--red-light); }
+  .complete-btn.done-btn { background: var(--green); }
+  .complete-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* PROGRESS */
+  .big-progress { background: var(--surface); border-radius: var(--radius-lg); padding: 1rem 1.1rem; margin-bottom: 1rem; }
+  .big-progress-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .big-progress-label { font-size: 13px; color: var(--text2); }
+  .big-progress-val { font-size: 24px; font-weight: 700; color: var(--text); }
+  .progress-bar { height: 8px; border-radius: 4px; background: var(--border); }
+  .progress-fill { height: 100%; border-radius: 4px; background: var(--red); transition: width 0.5s; }
+  .progress-fill.green { background: var(--green); }
+  .phase-progress-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
+  .phase-prog-top { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .phase-prog-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .phase-prog-pct { font-size: 12px; color: var(--text2); }
+  .week-prog-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 1rem; }
+  .week-prog-cell { background: var(--surface); border-radius: var(--radius); padding: 8px; text-align: center; }
+  .wpc-val { font-size: 19px; font-weight: 700; }
+  .wpc-label { font-size: 10px; color: var(--text2); margin-top: 1px; }
+
+  /* CALENDAR */
+  .cal-header-row, .calendar-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+  .cal-header-row { margin-bottom: 4px; }
+  .cal-label { font-size: 10px; color: var(--text2); text-align: center; }
+  .cal-cell { aspect-ratio: 1; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; }
+  .workout-day { background: var(--surface); cursor: pointer; color: var(--text2); }
+  .completed-day { background: var(--green-bg); color: var(--green-text); }
+  .rest-day { color: var(--border2); }
+
+  /* LOG */
+  .log-entry { display: flex; align-items: center; gap: 10px; padding: 9px 11px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+  .log-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .log-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .log-sub { font-size: 11px; color: var(--text2); }
+  .log-date { font-size: 11px; color: var(--text2); white-space: nowrap; }
+
+  /* UTILS */
+  .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 8px; }
+  .empty-state { font-size: 13px; color: var(--text2); padding: 0.5rem 0; }
+
+  /* SCHEDULE ROW */
+  .schedule-row { display: flex; align-items: center; gap: 10px; padding: 8px 11px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer; margin-bottom: 4px; }
+  .schedule-row:hover { border-color: var(--border2); }
+  .sched-wk { font-size: 13px; font-weight: 600; min-width: 58px; color: var(--text); }
+  .sched-info { flex: 1; font-size: 12px; color: var(--text2); }
+  .sched-count { font-size: 11px; }
+  .sched-bar { width: 40px; height: 4px; border-radius: 2px; background: var(--border); }
+  .sched-fill { height: 100%; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="app-header">
+    <div>
+      <div class="header-title">⚔ Iron Regiment</div>
+      <div class="header-sub">6-Month Dumbbell Military Program</div>
+    </div>
+    <div class="badge-phase" id="header-phase">Phase 1</div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('overview',event)">Overview</button>
+    <button class="nav-tab" onclick="switchTab('train',event)">Train</button>
+    <button class="nav-tab" onclick="switchTab('progress',event)">Progress</button>
+    <button class="nav-tab" onclick="switchTab('schedule',event)">Schedule</button>
+  </div>
+
+  <div id="tab-overview" class="tab-content active"></div>
+  <div id="tab-train" class="tab-content"></div>
+  <div id="tab-progress" class="tab-content"></div>
+  <div id="tab-schedule" class="tab-content"></div>
+</div>
+
+<script>
+// ── DATA ────────────────────────────────────────────────────────────────────
+const PHASES = [
+  { name:"Foundation",   weeks:"1–4",   focus:"Form mastery & base strength",   wRange:[1,4]   },
+  { name:"Strength",     weeks:"5–8",   focus:"Heavy compound dumbbell lifts",   wRange:[5,8]   },
+  { name:"Hypertrophy",  weeks:"9–13",  focus:"Volume & muscle growth",          wRange:[9,13]  },
+  { name:"Power",        weeks:"14–18", focus:"Explosiveness & speed",           wRange:[14,18] },
+  { name:"Cut & Define", weeks:"19–22", focus:"Definition & muscular endurance", wRange:[19,22] },
+  { name:"Peak",         weeks:"23–26", focus:"Max performance & strength peak", wRange:[23,26] },
+];
+
+const PHASE_PARAMS = [
+  { sets:"3", reps:"10-12", rest:"90s",  duration:"25 min", intensity:"Moderate"  },
+  { sets:"4", reps:"6-8",   rest:"120s", duration:"28 min", intensity:"Heavy"     },
+  { sets:"4", reps:"10-12", rest:"60s",  duration:"30 min", intensity:"High Vol." },
+  { sets:"5", reps:"5-6",   rest:"150s", duration:"30 min", intensity:"Power"     },
+  { sets:"3", reps:"15-20", rest:"30s",  duration:"22 min", intensity:"Endurance" },
+  { sets:"5", reps:"8-10",  rest:"90s",  duration:"30 min", intensity:"Peak"      },
+];
+
+const WORKOUT_DAYS = ["Monday","Tuesday","Thursday","Friday"];
+const DAY_TYPES    = ["A","B","C","D"];
+
+function makeSVG(color, shape) {
+  const C = { blue:"#378add",red:"#e24b4a",green:"#639922",amber:"#ef9f27",teal:"#1d9e75" };
+  const L = { blue:"#b5d4f4",red:"#f09595",green:"#c0dd97",amber:"#fac775",teal:"#9fe1cb" };
+  const c = C[color]||C.blue, l = L[color]||L.blue;
+  const S = {
+    press: `<circle cx="30" cy="13" r="7" fill="${c}"/><line x1="30" y1="20" x2="30" y2="33" stroke="${c}" stroke-width="3"/><line x1="14" y1="26" x2="46" y2="26" stroke="${c}" stroke-width="3"/><rect x="4" y="22" width="12" height="7" rx="2" fill="${l}"/><rect x="44" y="22" width="12" height="7" rx="2" fill="${l}"/>`,
+    curl: `<circle cx="30" cy="9" r="7" fill="${c}"/><line x1="30" y1="16" x2="30" y2="30" stroke="${c}" stroke-width="3"/><line x1="30" y1="30" x2="18" y2="44" stroke="${c}" stroke-width="3"/><rect x="6" y="40" width="16" height="7" rx="2" fill="${l}"/><rect x="2" y="35" width="22" height="7" rx="2" fill="${c}"/>`,
+    row: `<circle cx="14" cy="20" r="7" fill="${c}"/><line x1="14" y1="27" x2="14" y2="38" stroke="${c}" stroke-width="3"/><line x1="14" y1="38" x2="7" y2="50" stroke="${c}" stroke-width="2.5"/><line x1="14" y1="38" x2="21" y2="50" stroke="${c}" stroke-width="2.5"/><line x1="14" y1="28" x2="44" y2="32" stroke="${c}" stroke-width="2.5"/><rect x="38" y="27" width="16" height="7" rx="2" fill="${l}"/><rect x="36" y="22" width="22" height="7" rx="2" fill="${c}"/>`,
+    squat: `<circle cx="30" cy="8" r="6" fill="${c}"/><line x1="30" y1="14" x2="30" y2="27" stroke="${c}" stroke-width="3"/><line x1="16" y1="20" x2="44" y2="20" stroke="${c}" stroke-width="2.5"/><rect x="4" y="16" width="12" height="7" rx="2" fill="${l}"/><rect x="44" y="16" width="12" height="7" rx="2" fill="${l}"/><line x1="30" y1="27" x2="14" y2="46" stroke="${c}" stroke-width="3"/><line x1="30" y1="27" x2="46" y2="46" stroke="${c}" stroke-width="3"/><line x1="14" y1="46" x2="9" y2="56" stroke="${c}" stroke-width="2.5"/><line x1="46" y1="46" x2="51" y2="56" stroke="${c}" stroke-width="2.5"/>`,
+    lunge: `<circle cx="30" cy="8" r="6" fill="${c}"/><line x1="30" y1="14" x2="30" y2="26" stroke="${c}" stroke-width="3"/><line x1="16" y1="18" x2="44" y2="18" stroke="${c}" stroke-width="2.5"/><rect x="6" y="14" width="10" height="6" rx="2" fill="${l}"/><rect x="44" y="14" width="10" height="6" rx="2" fill="${l}"/><line x1="30" y1="26" x2="46" y2="44" stroke="${c}" stroke-width="3"/><line x1="46" y1="44" x2="52" y2="56" stroke="${c}" stroke-width="2.5"/><line x1="30" y1="26" x2="15" y2="42" stroke="${c}" stroke-width="3"/><line x1="15" y1="42" x2="15" y2="56" stroke="${c}" stroke-width="2.5"/>`,
+    rdl: `<circle cx="30" cy="8" r="6" fill="${c}"/><line x1="30" y1="14" x2="30" y2="30" stroke="${c}" stroke-width="3"/><line x1="14" y1="22" x2="46" y2="22" stroke="${c}" stroke-width="2.5"/><rect x="4" y="18" width="10" height="6" rx="2" fill="${l}"/><rect x="46" y="18" width="10" height="6" rx="2" fill="${l}"/><line x1="30" y1="30" x2="22" y2="52" stroke="${c}" stroke-width="3"/><line x1="30" y1="30" x2="38" y2="52" stroke="${c}" stroke-width="3"/><line x1="12" y1="36" x2="30" y2="30" stroke="${c}" stroke-width="2.5"/>`,
+    fly: `<circle cx="30" cy="11" r="6" fill="${c}"/><line x1="30" y1="17" x2="30" y2="30" stroke="${c}" stroke-width="3"/><line x1="5" y1="30" x2="55" y2="30" stroke="${c}" stroke-width="3"/><rect x="1" y="26" width="10" height="7" rx="2" fill="${l}"/><rect x="49" y="26" width="10" height="7" rx="2" fill="${l}"/><line x1="30" y1="30" x2="20" y2="50" stroke="${c}" stroke-width="2.5"/><line x1="30" y1="30" x2="40" y2="50" stroke="${c}" stroke-width="2.5"/>`,
+    db: `<rect x="4" y="26" width="52" height="8" rx="3" fill="${l}"/><rect x="1" y="20" width="12" height="20" rx="3" fill="${c}"/><rect x="47" y="20" width="12" height="20" rx="3" fill="${c}"/><rect x="20" y="27" width="20" height="6" rx="2" fill="${c}"/>`,
+  };
+  return `<svg viewBox="0 0 60 60" width="60" height="60">${S[shape]||S.db}</svg>`;
+}
+
+const EXERCISES = {
+  A: [
+    { name:"Dumbbell Chest Press",     desc:"Floor press, primary chest builder",         muscle:"Chest · Triceps · Front Delts", type:"tag-red",
+      form:"Lie on back, dumbbells at chest, elbows 45° from body. Press up until arms nearly straight, lower slowly. Keep shoulder blades pinched against the floor. 3-count descent.", svg:makeSVG('red','press') },
+    { name:"Dumbbell Incline Press",   desc:"Upper chest focus (use bag/pillow as wedge)", muscle:"Upper Chest · Triceps",         type:"tag-red",
+      form:"Lie on an inclined surface. Press dumbbells from upper chest upward at a slight angle, converging at the top. Excellent upper pec and anterior delt activation.", svg:makeSVG('blue','press') },
+    { name:"Dumbbell Shoulder Press",  desc:"Standing or seated overhead press",           muscle:"Deltoids · Triceps · Traps",     type:"tag-amber",
+      form:"Hold dumbbells at shoulder height, palms forward. Press directly overhead until arms fully extended. Lower to shoulders under control. Brace core throughout.", svg:makeSVG('amber','press') },
+    { name:"Dumbbell Lateral Raise",   desc:"Side delt width builder",                    muscle:"Medial Deltoids",                type:"tag-blue",
+      form:"Stand, dumbbells at sides. Raise arms out to shoulder height, slight elbow bend, thumbs slightly down. Squeeze at top. Lower in 3 counts. No swinging.", svg:makeSVG('blue','db') },
+    { name:"Dumbbell Tricep Kickback", desc:"Tricep isolation and definition",             muscle:"Triceps",                       type:"tag-green",
+      form:"Hinge forward, upper arm parallel to floor. Extend forearm back until arm is fully straight, squeeze tricep hard. Lower slowly. Work one arm at a time.", svg:makeSVG('green','row') },
+  ],
+  B: [
+    { name:"Dumbbell Bent-Over Row",  desc:"Primary back mass builder",                   muscle:"Lats · Rhomboids · Biceps",      type:"tag-red",
+      form:"Hinge at hips, back flat and parallel to floor, dumbbells hanging. Pull to hips squeezing shoulder blades together. Hold 1 second. Lower fully. No rounding.", svg:makeSVG('red','row') },
+    { name:"Single-Arm Row",          desc:"Unilateral back strength & balance",          muscle:"Lats · Rear Delts · Biceps",     type:"tag-blue",
+      form:"Brace one hand on knee or chair. Pull dumbbell to hip/ribcage keeping elbow close to body. Slight trunk rotation at top. Full stretch at the bottom each rep.", svg:makeSVG('blue','row') },
+    { name:"Dumbbell Bicep Curl",     desc:"Classic bicep builder",                       muscle:"Biceps · Brachialis",            type:"tag-amber",
+      form:"Stand, palms forward. Curl both (or alternate) to shoulders, squeeze hard at top. Lower in 3 counts. Absolutely no swinging. Supinate wrist as you curl.", svg:makeSVG('amber','curl') },
+    { name:"Hammer Curl",             desc:"Builds brachialis for arm thickness",         muscle:"Brachialis · Biceps · Forearms", type:"tag-green",
+      form:"Neutral grip (thumbs up) throughout the entire movement. Curl keeping palms facing each other. Builds overall arm thickness and forearm strength significantly.", svg:makeSVG('green','curl') },
+    { name:"Dumbbell Reverse Fly",    desc:"Rear delt & upper back definition",           muscle:"Rear Delts · Traps · Rhomboids", type:"tag-red",
+      form:"Hinge forward 45°, dumbbells hanging. Raise arms out to sides keeping slight elbow bend. Squeeze shoulder blades hard at top. Control the slow descent.", svg:makeSVG('teal','fly') },
+  ],
+  C: [
+    { name:"Dumbbell Goblet Squat",    desc:"Full leg activation with front load",        muscle:"Quads · Glutes · Core",          type:"tag-red",
+      form:"Hold one dumbbell vertically at chest with both hands. Squat deep, elbows inside knees at bottom. Keep chest tall and upright throughout. Drive through heels to stand.", svg:makeSVG('red','squat') },
+    { name:"Dumbbell Romanian Deadlift",desc:"Posterior chain king",                     muscle:"Hamstrings · Glutes · Lower Back",type:"tag-amber",
+      form:"Hold dumbbells in front of thighs. Hinge at hips pushing them back, lower dumbbells along legs with slight knee bend. Feel the hamstring stretch. Drive hips forward to rise.", svg:makeSVG('amber','rdl') },
+    { name:"Dumbbell Reverse Lunge",   desc:"Knee-friendly unilateral leg builder",      muscle:"Quads · Glutes · Balance",       type:"tag-blue",
+      form:"Hold dumbbells at sides. Step backward, lower back knee toward floor to 90°. Push off front foot to return. Alternate legs. More knee-friendly than forward lunges.", svg:makeSVG('blue','lunge') },
+    { name:"Dumbbell Sumo Squat",      desc:"Inner thigh & glute focus",                 muscle:"Inner Thighs · Glutes · Quads",  type:"tag-green",
+      form:"Wide stance, toes 45° out. Hold one dumbbell with both hands between legs. Squat until thighs parallel, chest up, knees tracking over toes. Great glute activation.", svg:makeSVG('green','squat') },
+    { name:"Dumbbell Step-Up",         desc:"Unilateral power & balance",                muscle:"Quads · Glutes · Balance",       type:"tag-red",
+      form:"Hold dumbbells at sides. Step onto sturdy chair/box with one foot, drive opposite knee up, step down. Full set one leg then switch. Builds unilateral power.", svg:makeSVG('red','lunge') },
+  ],
+  D: [
+    { name:"Dumbbell Renegade Row",   desc:"Core stability & back combined",             muscle:"Core · Back · Shoulders",        type:"tag-red",
+      form:"High plank with hands on dumbbells, feet wide for stability. Row one dumbbell to hip while resisting rotation. Alternate sides. Keep hips perfectly level — no twisting.", svg:makeSVG('red','row') },
+    { name:"Dumbbell Russian Twist",  desc:"Rotational core power",                      muscle:"Obliques · Core",                type:"tag-amber",
+      form:"Sit at 45°, feet raised (harder) or on floor. Hold one dumbbell with both hands. Rotate side to side touching dumbbell near floor each side. Rotate from core, not arms.", svg:makeSVG('amber','curl') },
+    { name:"Dumbbell Suitcase Carry", desc:"Loaded carry for core & posture",            muscle:"Core · Obliques · Grip · Traps", type:"tag-blue",
+      form:"Hold heavy dumbbell in one hand at side. Walk 15 steps resisting any lateral lean. Switch hands. Brutal anti-lateral-flexion core trainer and grip builder.", svg:makeSVG('blue','db') },
+    { name:"Dumbbell Woodchop",       desc:"Diagonal rotational power",                  muscle:"Obliques · Shoulders · Core",    type:"tag-green",
+      form:"Hold one dumbbell with both hands. Start high at one shoulder, chop diagonally to opposite knee, pivoting feet naturally. Control both the down and the return.", svg:makeSVG('green','fly') },
+    { name:"Dumbbell Farmer's Walk",  desc:"Full body conditioning & grip finisher",     muscle:"Full Body · Core · Grip",        type:"tag-red",
+      form:"Hold heavy dumbbells at sides. Walk with controlled steps, tall posture, shoulders packed back. Timed sets (30-60s). Builds grip, core stability, and total work capacity.", svg:makeSVG('red','db') },
+  ],
+};
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'ironreg_v3';
+let S = { selectedWeek:1, calWeek:1, completed:{}, exChecked:{}, trainView:null };
+try { const r=localStorage.getItem(STORAGE_KEY); if(r){ const p=JSON.parse(r); S={...S,...p,trainView:null}; } } catch(e){}
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({...S,trainView:null})); } catch(e){} }
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function getWeekPhase(w) { if(w<=4)return 0; if(w<=8)return 1; if(w<=13)return 2; if(w<=18)return 3; if(w<=22)return 4; return 5; }
+function getDayPlan(pi,dt) {
+  const n={A:{name:"Push Day",focus:"Chest · Shoulders · Triceps"},B:{name:"Pull Day",focus:"Back · Biceps · Rear Delts"},C:{name:"Legs & Glutes",focus:"Quads · Hamstrings · Glutes"},D:{name:"Core & Conditioning",focus:"Core · Stability · Grip Strength"}};
+  return {...n[dt],...PHASE_PARAMS[pi],exercises:EXERCISES[dt]};
+}
+function sk(w,d) { return `w${w}d${d}`; }
+function isDone(w,d) { return !!S.completed[sk(w,d)]; }
+function doneDate(w,d) { return S.completed[sk(w,d)]||''; }
+function countTotal() { return Object.values(S.completed).filter(Boolean).length; }
+function phaseStats(pi) { const[s,e]=PHASES[pi].wRange;let done=0,total=0;for(let w=s;w<=e;w++)for(let d=0;d<4;d++){total++;if(isDone(w,d))done++;}return{done,total}; }
+function weekOpts(sel) { return Array.from({length:26},(_,i)=>`<option value="${i+1}"${i+1===sel?' selected':''}>Week ${i+1} — Phase ${getWeekPhase(i+1)+1}: ${PHASES[getWeekPhase(i+1)].name}</option>`).join(''); }
+function weekDaysHTML(w) {
+  const ph=getWeekPhase(w);
+  return DAY_TYPES.map((dt,i)=>{
+    const done=isDone(w,i),p=getDayPlan(ph,dt),dd=doneDate(w,i);
+    return `<div class="day-card${done?' completed':''}" onclick="openDay(${w},${i})">
+      <div class="day-card-top">
+        <div><div class="day-label">${WORKOUT_DAYS[i]}</div><div class="day-name">${p.name}</div><div class="day-focus">${p.focus}</div>${dd?`<div class="date-badge">✓ ${dd}</div>`:''}</div>
+        <div class="check-icon ${done?'check-done':'check-pending'}">${done?'✓':''}</div>
+      </div>
+      <div class="day-meta"><span class="tag tag-red">${p.sets} sets</span><span class="tag tag-blue">${p.reps} reps</span><span class="tag tag-green">${p.duration}</span><span class="tag tag-amber">Rest ${p.rest}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tab,e) {
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(e&&e.target)e.target.classList.add('active');
+  else document.querySelectorAll('.nav-tab').forEach(t=>{ if((t.getAttribute('onclick')||'').includes("'"+tab+"'"))t.classList.add('active'); });
+  renderTab(tab);
+}
+function renderTab(tab) { ({overview:renderOverview,train:renderTrain,progress:renderProgress,schedule:renderSchedule})[tab](); }
+
+// ── OVERVIEW ─────────────────────────────────────────────────────────────────
+function renderOverview() {
+  const done=countTotal(),pct=Math.round(done/96*100);
+  let streak=0; for(let w=1;w<=26;w++){if(DAY_TYPES.every((_,i)=>isDone(w,i)))streak++;else break;}
+  const curPh=getWeekPhase(S.selectedWeek);
+  document.getElementById('header-phase').textContent='Phase '+(curPh+1);
+  document.getElementById('tab-overview').innerHTML=`
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" style="color:var(--green)">${done}</div><div class="stat-label">Sessions Done</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--blue)">96</div><div class="stat-label">Total Sessions</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--amber)">${streak}</div><div class="stat-label">Week Streak</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--red)">${pct}%</div><div class="stat-label">Complete</div></div>
+    </div>
+    <div class="section-title">6 Training Phases</div>
+    <div class="phase-grid">${PHASES.map((p,i)=>{const{done:pd,total:pt}=phaseStats(i);const pp=Math.round(pd/pt*100);return`<div class="phase-card${i===curPh?' active-phase':''}" onclick="jumpPhase(${i})"><div class="phase-num">Phase ${i+1}</div><div class="phase-name">${p.name}</div><div class="phase-weeks">Wks ${p.weeks}</div><div class="phase-bar"><div class="phase-fill" style="width:${pp}%"></div></div></div>`;}).join('')}</div>
+    <div class="divider"></div>
+    <div class="section-title">Week ${S.selectedWeek} — ${PHASES[curPh].name}</div>
+    <div class="week-selector"><select onchange="ovSetWeek(this.value)">${weekOpts(S.selectedWeek)}</select></div>
+    <div class="days-grid">${weekDaysHTML(S.selectedWeek)}</div>`;
+}
+function ovSetWeek(v){S.selectedWeek=parseInt(v);save();renderOverview();}
+function jumpPhase(i){S.selectedWeek=PHASES[i].wRange[0];save();renderOverview();}
+function openDay(w,d){S.trainView={week:w,dayIdx:d};switchTab('train',null);}
+
+// ── TRAIN ────────────────────────────────────────────────────────────────────
+function renderTrain() {
+  const el=document.getElementById('tab-train');
+  if(!S.trainView){
+    const w=S.selectedWeek,ph=getWeekPhase(w);
+    el.innerHTML=`<div class="section-title" style="margin-bottom:8px">Select session — Week ${w} (Phase ${ph+1}: ${PHASES[ph].name})</div>
+    <div class="week-selector"><select onchange="trainSetWeek(this.value)">${weekOpts(w)}</select></div>
+    <div class="days-grid">${weekDaysHTML(w)}</div>`;
+    return;
+  }
+  const{week:w,dayIdx:di}=S.trainView,ph=getWeekPhase(w),dt=DAY_TYPES[di],p=getDayPlan(ph,dt),exList=p.exercises;
+  const sessionDone=isDone(w,di),dd=doneDate(w,di),allChecked=exList.every((_,ei)=>!!S.exChecked[`w${w}d${di}ex${ei}`]);
+  let html=`<button class="back-btn" onclick="backTrain()">&#8592; Week ${w}</button>
+  <div class="workout-title">${p.name}</div>
+  <div class="workout-subtitle">Week ${w} · Phase ${ph+1}: ${PHASES[ph].name} · ${WORKOUT_DAYS[di]}${sessionDone&&dd?` · Completed ${dd}`:''}</div>
+  <div class="workout-meta-row">
+    <div class="meta-pill">Duration <span>${p.duration}</span></div>
+    <div class="meta-pill">Sets <span>${p.sets}</span></div>
+    <div class="meta-pill">Reps <span>${p.reps}</span></div>
+    <div class="meta-pill">Rest <span>${p.rest}</span></div>
+    <div class="meta-pill">Level <span>${p.intensity}</span></div>
+  </div>
+  <div class="section-title" style="margin-bottom:8px">Tap each exercise — check off when complete</div>
+  <div class="exercise-list">`;
+  exList.forEach((ex,ei)=>{
+    const exKey=`w${w}d${di}ex${ei}`,ck=!!S.exChecked[exKey];
+    html+=`<div class="exercise-item${ck?' checked':''}">
+      <div class="exercise-header" onclick="toggleEx(${w},${di},${ei})">
+        <div class="ex-checkbox${ck?' checked':''}">${ck?'&#10003;':''}</div>
+        <div class="ex-info">
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-desc">${ex.desc} &middot; <em style="font-size:11px">${ex.muscle}</em></div>
+          <div class="ex-tags"><span class="tag ${ex.type}">${p.sets}&times;${p.reps}</span><span class="tag tag-blue">Rest ${p.rest}</span></div>
+        </div>
+        <div style="font-size:12px;color:var(--text3)">&#9660;</div>
+      </div>
+      <div class="ex-img-area" id="eximg-${ei}">
+        <div class="img-inner">
+          <div class="ex-svg-wrap">${ex.svg}</div>
+          <div class="ex-details"><strong>Form:</strong> ${ex.form}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>
+  <button class="complete-btn${sessionDone?' done-btn':''}" onclick="markDone(${w},${di})"${!allChecked&&!sessionDone?' disabled':''}>
+    ${sessionDone?`&#10003; Completed &#8212; ${dd}`:allChecked?'Mark Session Complete':'Check all exercises to unlock'}
+  </button>`;
+  el.innerHTML=html;
+}
+function toggleEx(w,di,ei){
+  const key=`w${w}d${di}ex${ei}`;S.exChecked[key]=!S.exChecked[key];save();
+  renderTrain();
+  const el=document.getElementById('eximg-'+ei);if(el)el.classList.add('open');
+}
+function markDone(w,di){
+  const now=new Date(),ds=now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  S.completed[sk(w,di)]=ds;save();renderTrain();
+}
+function backTrain(){S.trainView=null;renderTrain();}
+function trainSetWeek(v){S.selectedWeek=parseInt(v);S.trainView=null;save();renderTrain();}
+
+// ── PROGRESS ─────────────────────────────────────────────────────────────────
+function renderProgress(){
+  const done=countTotal(),pct=Math.round(done/96*100),w=S.selectedWeek;
+  let wdone=0;for(let d=0;d<4;d++)if(isDone(w,d))wdone++;
+  const entries=Object.entries(S.completed).filter(([,v])=>v);
+  let html=`
+  <div class="big-progress">
+    <div class="big-progress-top"><div class="big-progress-label">Overall &mdash; ${done}/96 sessions</div><div class="big-progress-val">${pct}%</div></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  </div>
+  <div class="section-title">Phase Breakdown</div>
+  <div class="phase-progress-list">${PHASES.map((p,i)=>{const{done:pd,total:pt}=phaseStats(i);const pp=Math.round(pd/pt*100);return`<div class="phase-prog-top"><span class="phase-prog-name">Phase ${i+1}: ${p.name} (Wks ${p.weeks})</span><span class="phase-prog-pct">${pd}/${pt} &middot; ${pp}%</span></div><div class="progress-bar" style="height:5px;margin-bottom:4px"><div class="progress-fill green" style="width:${pp}%"></div></div>`;}).join('')}</div>
+  <div class="divider"></div>
+  <div class="section-title">Week ${w} Stats</div>
+  <div class="week-prog-grid">
+    <div class="week-prog-cell"><div class="wpc-val" style="color:var(--green)">${wdone}</div><div class="wpc-label">Done</div></div>
+    <div class="week-prog-cell"><div class="wpc-val" style="color:var(--red)">${4-wdone}</div><div class="wpc-label">Remaining</div></div>
+    <div class="week-prog-cell"><div class="wpc-val" style="color:var(--blue)">4</div><div class="wpc-label">Planned</div></div>
+    <div class="week-prog-cell"><div class="wpc-val" style="color:var(--amber)">${Math.round(wdone/4*100)}%</div><div class="wpc-label">Rate</div></div>
+  </div>
+  <div class="divider"></div>
+  <div class="section-title">Completed Sessions Log</div>
+  ${!entries.length?`<div class="empty-state">No completed sessions yet. Start training!</div>`:
+    `<div style="display:flex;flex-direction:column;gap:6px">${entries.slice().reverse().map(([key,date])=>{const m=key.match(/w(\d+)d(\d+)/);if(!m)return'';const wk=parseInt(m[1]),di=parseInt(m[2]),p=getDayPlan(getWeekPhase(wk),DAY_TYPES[di]);return`<div class="log-entry"><div class="log-dot"></div><div style="flex:1"><div class="log-name">${p.name}</div><div class="log-sub">Week ${wk} &middot; ${WORKOUT_DAYS[di]}</div></div><div class="log-date">${date}</div></div>`;}).join('')}</div>`}
+  <div class="divider"></div>
+  <div class="section-title">Activity Calendar &mdash; Week <span id="cal-wk-lbl">${S.calWeek}</span></div>
+  <div class="week-selector"><select onchange="calSetWeek(this.value)">${weekOpts(S.calWeek)}</select></div>
+  <div class="cal-header-row"><div class="cal-label">Mon</div><div class="cal-label">Tue</div><div class="cal-label">Wed</div><div class="cal-label">Thu</div><div class="cal-label">Fri</div><div class="cal-label">Sat</div><div class="cal-label">Sun</div></div>
+  <div class="calendar-grid">${[0,1,null,2,3,null,null].map((di,_)=>di===null?`<div class="cal-cell rest-day">R</div>`:`<div class="cal-cell ${isDone(S.calWeek,di)?'completed-day':'workout-day'}" onclick="openDay(${S.calWeek},${di})" title="${getDayPlan(getWeekPhase(S.calWeek),DAY_TYPES[di]).name}">${isDone(S.calWeek,di)?'&#10003;':DAY_TYPES[di]}</div>`).join('')}</div>`;
+  document.getElementById('tab-progress').innerHTML=html;
+}
+function calSetWeek(v){S.calWeek=parseInt(v);save();renderProgress();}
+
+// ── SCHEDULE ─────────────────────────────────────────────────────────────────
+function renderSchedule(){
+  let html='';
+  PHASES.forEach((ph,pi)=>{
+    const[s,e]=ph.wRange;
+    html+=`<div style="margin-bottom:1.25rem"><div class="section-title">Phase ${pi+1}: ${ph.name} &mdash; Weeks ${ph.weeks}</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px">${ph.focus}</div>`;
+    for(let w=s;w<=e;w++){
+      const p=PHASE_PARAMS[pi],done=DAY_TYPES.filter((_,i)=>isDone(w,i)).length;
+      const col=done===4?'var(--green)':done>0?'var(--amber)':'var(--text3)';
+      html+=`<div class="schedule-row" onclick="jumpTrain(${w})"><div class="sched-wk">Week ${w}</div><div class="sched-info">${p.sets} sets &middot; ${p.reps} reps &middot; Rest ${p.rest} &middot; ${p.intensity}</div><div class="sched-count" style="color:${col}">${done}/4</div><div class="sched-bar"><div class="sched-fill" style="width:${done/4*100}%;background:${col}"></div></div></div>`;
+    }
+    html+='</div>';
+  });
+  document.getElementById('tab-schedule').innerHTML=html;
+}
+function jumpTrain(w){S.selectedWeek=w;S.trainView=null;save();switchTab('train',null);}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+renderOverview();
+</script>
+</body>
+</html>
